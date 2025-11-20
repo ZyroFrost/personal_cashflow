@@ -7,7 +7,7 @@
 # ROOT_PATH = str(Path(__file__).resolve().parents[3])
 # sys.path.insert(0, ROOT_PATH)
 
-from core.database_manager import DatabaseManager   
+from core.database_manager import DatabaseManager
 from core import config
 from datetime import datetime
 
@@ -20,6 +20,7 @@ class CategoryModel:
     def __init__(self):
         self.db_manager = DatabaseManager() # tạo instance DatabaseManager (instance = 1 đối tượng của Class)
         self.collection = self.db_manager.get_collection(collection_name=collection_name) # lấy collection từ DatabaseManager
+        self.__initialize_default_categories__() # khởi tạo category mac dinh luôn ngay khi vừa gọi class
 
     # Khoi tao category mac dinh
     def __initialize_default_categories__(self):

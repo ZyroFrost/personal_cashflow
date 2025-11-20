@@ -1,0 +1,11 @@
+/* CSS ÁP DỤNG TOÀN CỤC CHO NÚT BẤM */
+div[data-testid="stButton"] > button {
+    width: 100%; /* Giúp nút giãn ra */
+    text-align: left; /* Canh trái nội dung */
+}
+
+/* Đảm bảo nội dung (text + icon) bên trong nút dính sang trái */
+div[data-testid="stButton"] > button > div {
+    justify-content: flex-start; 
+    width: 100%;
+}
