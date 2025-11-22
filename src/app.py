@@ -1,11 +1,11 @@
 import streamlit as st
 import os
-from datetime import datetime
 from pathlib import Path
 from core import config
 from models.category_models import CategoryModel
 from models.transaction_models import TransactionModel
-from views import dashboard_view, transaction_view
+from views.dashboard_view import show_dashboard
+from views.transactions_view import show_transactions
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 from streamlit_option_menu import option_menu # thư viện mở rộng của streamlit để add icon với css
 
@@ -21,16 +21,15 @@ def init_category_models():
 def init_transaction_models():
     return TransactionModel()
 
-def show_dashboard():
-    return dashboard_view.show_dashboard()
-
 def load_css(file_name):
     css_path = Path(__file__).parent.parent / "assets" /file_name # truy từ folder root xuống
     with open(css_path, "r", encoding="utf-8") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# set trang hiện tại
 def set_page(page_name):
-    st.session_state["current_page"] = page_name # cập nhập trạng thái hiện tại khi nút được bấm
+    page_name = st.session_state["current_page"] 
+    return page_name # cập nhập trạng thái hiện tại khi nút được bấm
 
 if 'current_page' not in st.session_state:
     st.session_state['current_page'] = 'Dashboard' # Mặc định hiển thị Dashboarddef set_page(page_name):
@@ -39,7 +38,7 @@ cate = init_category_models()
 trans = init_transaction_models()
 user = None
 
-# ======== MAIN PAGE =========
+# ======== STREAMLIT SETUP =========
 # Set page config phải đặt đầu tiên, nếu nằm sau st nào khác thì sẽ báo lỗi
 st.set_page_config(
     page_title=APP_NAME,
@@ -49,6 +48,33 @@ st.set_page_config(
 
 # Chỉnh màu cho cục bộ toàn app (màu xám)
 st.markdown("""<style>.stApp {background-color: #DCDCDC;}</style>""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] > .main {{
+background-image: url("https://images.unsplash.com/photo-1501426026826-31c667bdf23d");
+background-size: 180%;
+background-position: top left;
+background-repeat: no-repeat;
+background-attachment: local;
+}}
+
+[data-testid="stSidebar"] > div:first-child {{
+background-image: url("data:image/png;base64,{img}");
+background-position: center; 
+background-repeat: no-repeat;
+background-attachment: fixed;
+}}
+
+[data-testid="stHeader"] {{
+background: rgba(0,0,0,0);
+}}
+
+[data-testid="stToolbar"] {{
+right: 2rem;
+}}
+</style>
+""", unsafe_allow_html=True)
+
 load_css("style.css")
 
 # tùy chỉnh cho phần menu
@@ -62,34 +88,12 @@ menu_style = """
         align-items: center; /* Canh giữa dọc */
     }"""
 
-# tùy chỉnh cho phần header
-header_style = """
-    {
-        background-color: white;
-        border-radius: 12px;
-        padding: 15px 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        min-height: 8vh !important;
-        align-items: center; /* Canh giữa dọc */
-    }"""
-
-# tùy chỉnh cho phần main
-body_style = """
-    {
-        background-color: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        min-height: 70.5vh !important;
-        overflow-y: auto; /* Nếu nội dung dài thì cuộn bên trong khung */
-    }"""
-
 # Tùy chỉnh cho option_menu
 custom_styles = {
         "container": {"padding": "0!important", "background-color": "#FFFFFF", "border-radius": "15px"},
     }
 
-# = TOP =
+# ======== STREAMLIT SHOW =========
 # User info
 left, right = st.columns([1, 5], gap="small", vertical_alignment="center")
 with left:
@@ -121,53 +125,10 @@ with left:
 
 # Functions field
 with right:
-    with stylable_container(key="filter_box", css_styles=header_style):
-        header_left, header_right = st.columns([1, 3], gap="small", vertical_alignment="center")
-        current_page = st.session_state['current_page']
-
-        # Display main name
-        with header_left:
-            if current_page == "Dashboard":
-                st.subheader("Dashboard")
-            if current_page == "Transactions":
-                st.subheader("Transactions")
-            if current_page == "Goals":
-                st.subheader("Goals")
-            if current_page == "Register":
-                st.subheader("Register")
-            if current_page == "Settings":
-                st.subheader("Settings")
-            if current_page == "About":
-                st.subheader("About")
-        
-        # Functions field (search, filter, sort, add new)
-        with header_right:
-            cFilter, cSort, cSearch, col4 = st.columns(4, gap="small")
-            with cFilter:
-                st.button("Filter", use_container_width=True)
-            with cSort:
-                with st.popover("Sort", use_container_width=True): 
-                    st.selectbox("Sort by", ["Date", "Amount", "Category"])
-            with cSearch:
-                with st.popover("Search", use_container_width=True):
-                    st.text_input("Intput search", placeholder="Search")
-            with col4:
-                with st.popover("Add transaction", icon="➕", use_container_width=True):   
-                    select_type = st.selectbox("Type", config.TRANSACTION_TYPES)
-                    name = st.text_input("Name your transaction")
-
-                    add_transaction = trans.add_transaction({"type": select_type, "name": name, "created_at": datetime.now(), "last_modified": datetime.now()})
-                    st.button("Comfirm", icon="✔️", use_container_width=True, on_click=add_transaction)
-        
-    # Main display
-    with stylable_container(key="main_box", css_styles=body_style):
-        current_page = st.session_state['current_page']
-
-        if current_page == "Dashboard":
-            dashboard_view.show_dashboard()
-
-        if current_page == "Transactions":
-            st.subheader("Transactions")
-
-        if current_page == "Goals":
-            st.subheader("Goals")
+    current_page = st.session_state['current_page']
+    if current_page == "Dashboard":
+        show_dashboard()
+        #st.write("Dashboard")
+    if current_page == "Transactions":
+        show_transactions()
+        #st.write("Transactions")

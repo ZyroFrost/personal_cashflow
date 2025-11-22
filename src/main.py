@@ -1,19 +1,26 @@
-from core.database_manager import DatabaseManager
-from models.category_models import CategoryModel
-from models.transaction_models import TransactionModel 
+import streamlit as st
+import pandas as pd
 
-if __name__ == "__main__":
+item_count = 100
+column_count = 100
+row_count = 1000
 
-    print("\n===== TEST DATABASE =====")
-    DB = DatabaseManager()
+columns = []
+for col in range(column_count):
+    columns.append(f'column_{col:04d}')
+df = pd.DataFrame(columns=columns)
+for row in range(row_count):
+    cells = []
+    for col in range(column_count):
+        cells.append(f'cell_{row:04d}_{col:04d}')
+    df.loc[row] = cells
 
-    print("\n===== TEST CRUD =====")
-    print("== TEST CATEGORY MODEL ==")
-    cate = CategoryModel()
-    cate.add_category(type="expense", category_name="clothing")    
-    print("Category added successfully!")
+with st.sidebar:
+    st.write("sidebar")
+    for i in range(item_count):
+        st.write(f"item_{i:04d}")
 
-    print("\n== TEST TRANSACTION MODEL ==")
-    tran = TransactionModel()
-    tran.add_transaction({"type": "expense", "category": "clothing", "amount": 1000})
-    print("Transaction added successfully!")
+with st.container():
+    st.write("header")
+    st.dataframe(df, use_container_width=False)
+    st.write("footer")

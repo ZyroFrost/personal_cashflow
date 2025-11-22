@@ -20,20 +20,36 @@ COLLECTIONS = {
 }
 
 # Transaction types (use for dropdown list)
-TRANSACTION_TYPES = ["Expense", "Income"]
+TRANSACTION_TYPES = ["Expense", "Income", "Transfer"]
+
+# Category for transfer
+TRANSFER_CATEGORY = ["From Wallet", "To Wallet"]
+
+# Currencies list
+CURRENCIES = {
+    "VND": {"symbol": "₫", "decimals": 0},
+    "USD": {"symbol": "$", "decimals": 2},
+}
 
 # Categories expense (use for dropdown list)
 DEFAULT_CATEGORIES_EXPENSE = [
     "Shopping",
     "Transportation",
-    "Entertainment",
-    "Others"
+    "Entertainment"
 ]
 
 # Categories income (use for dropdown list)
 DEFAULT_CATEGORIES_INCOME = [
-    "Wave",
-    "Others"
+    "Salary",
+]
+
+DEFAULT_TIME_FILTERS = [
+    "A month",
+    "2 months",
+    "3 months",
+    "6 months",
+    "1 year",
+    "All"
 ]
 
 '''

@@ -86,25 +86,22 @@ class CategoryModel:
         item_add = {
             "type": type,
             "name": category_name,
+            "created_at": datetime.now(),
+            "last_modified": datetime.now()
         } 
 
         # Kiểm tra category name có tồn tại ko
-        item_existing = self.collection.find_one({"type": type, "name": category_name})
-
-        if item_existing: # Nếu tìm thấy category name (có tồn tại)
-            item_add['last_modified'] = datetime.now() # thêm cót giá trị last_modified (vì đã có cột created_at rồi)
-        else: # Nếu không tìm thấy category name (chưa tạo)
-            item_add['created_at'] = datetime.now() # thêm cột giá trị created_at
-            item_add['last_modified'] = datetime.now() # thêm cót giá trị last_modified
-
-        self.collection.update_one( # code này giống ở trên, tìm thấy thì chỉ update, không thì insert
-            {"name": category_name, "type": type},
-            {"$setOnInsert": item_add},
-            upsert=True
-        )
+        try:
+            result = self.collection.insert_one(item_add)
+            print("Inserted:", result.inserted_id)
+            return result
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
 
     # Nút xóa category
     def delete_category(self, type: str, category_name: str):
+        print("Deleted category successfully", type, category_name)
         result = self.collection.delete_one({"name": category_name, "type": type}) 
         return result
 
@@ -118,7 +115,7 @@ class CategoryModel:
         result = self.collection.find({})
         return len(list(result))
 
-#'''
+'''
 if __name__== "__main__":
     print("Init category collection")
     cate = CategoryModel() 
