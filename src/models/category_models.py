@@ -9,6 +9,7 @@
 
 from core.database_manager import DatabaseManager
 from core import config
+from bson import ObjectId
 from datetime import datetime
 
 collection_name = config.COLLECTIONS['category'] # Lay ten collection tu config
@@ -104,6 +105,13 @@ class CategoryModel:
         print("Deleted category successfully", type, category_name)
         result = self.collection.delete_one({"name": category_name, "type": type}) 
         return result
+
+    def update_category(self, category_id: str, category_data: dict):
+        print("Updated category successfully", category_id, category_data)
+        result = self.collection.update_one(
+            {"_id": ObjectId(category_id)}, 
+            {"$set": category_data}) # $set là toán tử của update dữ liệu, set dữ liệu mới cần đổi
+        return result  
 
     # Nút tim kiếm category theo type
     def get_category_by_type(self, type: str):

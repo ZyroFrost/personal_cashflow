@@ -8,7 +8,7 @@ load_dotenv()
 
 # MONGO configuration
 MONGO_URI = os.getenv("MONGO_URI", "localhost:2017") # localhost:2017 by default (prevent errors when running on localhost)
-DATABASE_NAME = "finance_tracker"
+DATABASE_NAME = "finance_tracker_local"
 APP_NAME="FINANCE TRACKER"
 
 # Collections (tương đương tables trong SQL)
@@ -20,10 +20,7 @@ COLLECTIONS = {
 }
 
 # Transaction types (use for dropdown list)
-TRANSACTION_TYPES = ["Expense", "Income", "Transfer"]
-
-# Category for transfer
-TRANSFER_CATEGORY = ["From Wallet", "To Wallet"]
+TRANSACTION_TYPES = ["Expense", "Income"]
 
 # Currencies list
 CURRENCIES = {
@@ -40,7 +37,7 @@ DEFAULT_CATEGORIES_EXPENSE = [
 
 # Categories income (use for dropdown list)
 DEFAULT_CATEGORIES_INCOME = [
-    "Salary",
+    "Salary"
 ]
 
 DEFAULT_TIME_FILTERS = [

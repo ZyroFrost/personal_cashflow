@@ -21,7 +21,6 @@ class TransactionModel:
             "name": transaction_data.get("name"),
             "currency": transaction_data.get("currency"),
             "amount": float(transaction_data["amount"]),
-            "date": transaction_data.get("date"),
             "description": transaction_data.get("description", ""),
             "created_at": datetime.now(),        
             "last_modified": datetime.now(),

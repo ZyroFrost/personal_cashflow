@@ -14,7 +14,15 @@ def init_category_models():
 def refresh_page():
     return st.rerun()
 
-def show_sample_line_chart():
+# Get list from db
+type_list = ["All"] + config.TRANSACTION_TYPES.copy()
+cate_income = ["All"] + [c["name"] for c in init_category_models().get_category_by_type("Income")] 
+cate_expense = ["All"] +  [c["name"] for c in init_category_models().get_category_by_type("Expense")]
+cate_full_list = (["All"] + [c["name"] for c in init_category_models().get_category_by_type("Income")] + 
+                            [c["name"] for c in init_category_models().get_category_by_type("Expense")])
+currency_list = ["All"] + list(config.CURRENCIES.keys())
+
+def _render_sample_line_chart():
     st.markdown("**Trending**")
     
     dates = pd.date_range("2025-01-01", periods=10) # Tạo chuỗi ngày (Date)
@@ -34,7 +42,7 @@ def show_sample_line_chart():
     #st.dataframe(df)
 
     # 2. VẼ BIỂU ĐỒ (Sử dụng hàm st.line_chart())
-    st.markdown("---")
+    #st.markdown("---")
     st.caption("Biểu đồ thể hiện sự thay đổi giữa Thu nhập và Chi tiêu theo thời gian.")
     
     # Vẽ biểu đồ đường, Streamlit sẽ tự động dùng Index (Date) làm trục X
@@ -43,90 +51,45 @@ def show_sample_line_chart():
     # HOẶC bạn có thể chỉ định rõ ràng cột Y muốn vẽ:
     # st.line_chart(df['Daily_Expense'])
 
-# tùy chỉnh cho phần header
-header_style = """
-    {
-        background-color: white;
-        border-radius: 12px;
-        padding: 15px 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        min-height: 8vh !important;
-        max-height: 8vh !important;
-        align-items: center; /* Canh giữa dọc */
-    }"""
+# ======== RENDER DASHBOARD ==========
+def _render_dashboard_func_panel():
+    _, cFilter = st.columns([1, 1])
 
-# tùy chỉnh cho phần main
-body_style = """
-    {
-        background-color: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        min-height: 70.4vh !important;
-        max-height: 70.4vh !important;
-        overflow-y: auto; /* Nếu nội dung dài thì cuộn bên trong khung */
-    }"""
+    # Filter popover
+    with cFilter:
+        with st.popover("Filter", icon="🔎", use_container_width=True):    
+            # Select type
+            st.selectbox("↔️ Transaction Type", type_list, key="select_type1")
 
-# ======== SHOW DASHBOARD ==========
-def show_dashboard():
+            # Select category
+            if st.session_state.select_type1 == "Income":
+                st.selectbox("📦 Category Name", cate_income, key="select_category1")         
+            elif st.session_state.select_type1 == "Expense":     
+                st.selectbox("📦 Category Name", cate_expense, key="select_category1")
+            elif st.session_state.select_type1 == "All":
+                st.selectbox("📦 Category Name", cate_full_list, key="select_category1")
+            
+            # Select date range
+            st.select_slider("📅 Date Range Option", options=config.DEFAULT_TIME_FILTERS, key="date_range1")
 
-    # Get list from db
-    type_list = ["All"] + config.TRANSACTION_TYPES.copy()
-    cate_income = ["All"] + [c["name"] for c in init_category_models().get_category_by_type("Income")] 
-    cate_expense = ["All"] +  [c["name"] for c in init_category_models().get_category_by_type("Expense")]
-    cate_full_list = (["All"] + [c["name"] for c in init_category_models().get_category_by_type("Income")] + 
-                                [c["name"] for c in init_category_models().get_category_by_type("Expense")])
-    currency_list = ["All"] + list(config.CURRENCIES.keys())
+            # Select currency
+            st.selectbox("💰 Currency", currency_list, key="currency1")
 
+            # Select amount
+            min, max = st.columns(2)
+            with min:
+                st.number_input("🔽 Minimum Amount", min_value=0, value=0, key="min_amount1")
+            with max:
+                st.number_input("🔼 Maximum Amount", min_value=0, value=0, key="max_amount1")
+
+def _render_dashboard():
     # Header
-    with stylable_container(key="header_box", css_styles=header_style):
-        header_left, header_right = st.columns([1.5, 1], gap="small", vertical_alignment="center")
-        
-        # Display main name
-        with header_left:
-            st.subheader("Dashboard")
-    
-        # Filter panel
-        with header_right:
-            cFilter, cRefresh = st.columns([2, 1], gap="small")
-            with cFilter:    
-                with st.popover("Filter", icon="🔎", use_container_width=True):    
-                    # Select type
-                    st.selectbox("↔️ Transaction Type", type_list, key="select_type1")
 
-                    # Select category
-                    if st.session_state.select_type1 == "Income":
-                        st.selectbox("📦 Category Name", cate_income, key="select_category1")         
-                    elif st.session_state.select_type1 == "Expense":     
-                        st.selectbox("📦 Category Name", cate_expense, key="select_category1")
-                    elif st.session_state.select_type1 == "All":
-                        st.selectbox("📦 Category Name", cate_full_list, key="select_category1")
-                    else:
-                        st.selectbox("📦 Category Name", config.TRANSFER_CATEGORY, key="select_category1")
-                    
-                    # Select date range
-                    st.select_slider("📅 Date Range Option", options=config.DEFAULT_TIME_FILTERS, key="date_range1")
-
-                    # Select currency
-                    st.selectbox("💰 Currency", currency_list, key="currency1")
-
-                    # Select amount
-                    min, max = st.columns(2)
-                    with min:
-                        st.number_input("🔽 Minimum Amount", min_value=0, value=0, key="min_amount1")
-                    with max:
-                        st.number_input("🔼 Maximum Amount", min_value=0, value=0, key="max_amount1")
-
-                with cRefresh:
-                    st.button("Refresh", icon="🔄", on_click=refresh_page)
-                    
-    # Main display
-    with stylable_container(key="main_box", css_styles=body_style):
-        show_sample_line_chart()
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Income", "Rp 1,000,000", "Rp 500,000")
-        with col2:
-            st.metric("Total Expense", "Rp 1,000,000", "Rp 500,000")
-        with col3:
-            st.metric("Balance", "Rp 1,000,000", "Rp 500,000")
+    _render_sample_line_chart()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Income", "Rp 1,000,000", "Rp 500,000")
+    with col2:
+        st.metric("Total Expense", "Rp 1,000,000", "Rp 500,000")
+    with col3:
+        st.metric("Balance", "Rp 1,000,000", "Rp 500,000")
