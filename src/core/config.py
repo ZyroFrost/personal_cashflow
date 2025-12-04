@@ -16,7 +16,8 @@ COLLECTIONS = {
     "user": "users",
     "transaction": "transactions",
     "category": "categories",
-    "budget": "budgets"
+    "budget": "budgets",
+    "exchange_rate": "exchange_rates"
 }
 
 # Transaction types (use for dropdown list)
@@ -24,29 +25,18 @@ TRANSACTION_TYPES = ["Expense", "Income"]
 
 # Currencies list
 CURRENCIES = {
-    "VND": {"symbol": "₫", "decimals": 0},
-    "USD": {"symbol": "$", "decimals": 2},
+    "VND": "₫",
+    "USD": "$"
 }
 
 # Categories expense (use for dropdown list)
 DEFAULT_CATEGORIES_EXPENSE = [
-    "Shopping",
-    "Transportation",
-    "Entertainment"
+    "Shopping"
 ]
 
 # Categories income (use for dropdown list)
 DEFAULT_CATEGORIES_INCOME = [
     "Salary"
-]
-
-DEFAULT_TIME_FILTERS = [
-    "A month",
-    "2 months",
-    "3 months",
-    "6 months",
-    "1 year",
-    "All"
 ]
 
 '''

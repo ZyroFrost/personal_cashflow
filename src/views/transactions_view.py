@@ -1,141 +1,109 @@
-from core import config
-from models.category_models import CategoryModel
-from models.transaction_models import TransactionModel
-from datetime import datetime, time  
+from utils import get_format_currency, get_format_amount, get_date_range_options, get_type_list, get_currencies_list, state_input, format_date
+from assets.styles import container_page_css, container_main_css, transaction_card_css
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 import streamlit as st       
 
-# ======== CONFIG =========
-@st.cache_resource 
-def init_category_models():
-    return CategoryModel()
+# ======== DiALOGS =========
+def delete_transaction_dialog(transaction_model):
+    dialog_name = st.session_state.trans_confirm_delete # lấy name của transaction từ session state (phần nút xóa)
+    trans_id = st.session_state.trans_confirm_delete_id # lấy id của transaction (dùng để đưa vào hàm khi confirm)
+    print(dialog_name)
 
-@st.cache_resource # tạo trước def để chỉ tạo 1 lần (lần sau gọi trong cache)
-def init_transaction_models():
-    return TransactionModel()
+    @st.dialog(f"Transaction '{dialog_name}' will be deleted. Are you sure you want to delete?") # Tạo dialog xác nhận xóa transaction
+    def trans_dialog():
+        cCancel, cConfirm = st.columns(2)
 
-def refresh_page():
-    return st.rerun()
+        if cCancel.button("❌ Cancel", use_container_width=True):
+            st.session_state.trans_confirm_delete = None # Tắt dialog confirm
+            st.session_state.trans_confirm_delete_id = None
+            st.rerun()
 
-def arrow(transaction_type):
-    if transaction_type == "Income":
-        return "▲"
-    elif transaction_type == "Expense":
-        return "▼"
+        if cConfirm.button("✅ Confirm", use_container_width=True):
+            result = transaction_model.delete_transaction(trans_id) # Xóa transaction
 
-# Get list from db
-type_list = config.TRANSACTION_TYPES.copy()
-cate_income = [c["name"] for c in init_category_models().get_category_by_type("Income")] 
-cate_expense = [c["name"] for c in init_category_models().get_category_by_type("Expense")]
-currency_list = list(config.CURRENCIES.keys())
+            # Tắt dialog confirm
+            st.session_state.trans_confirm_delete = None
+            st.session_state.trans_confirm_delete_id = None
 
-body_style = """
-    {
-        background-color: white;
-        border-radius: 12px;
-        padding: 18px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        min-height: 60vh !important;
-        max-height: 60vh !important;
-        overflow-y: auto; /* Nếu nội dung dài thì cuộn bên trong khung */
-    }"""
+            # Mở dialog message
+            if result: # nếu xóa thanh cong
+                st.session_state.delete_trans_success = dialog_name # gán trạng thái xóa thanh cong thành = name (delete_trans_success = trans_confirm_delete)
+            else:
+                st.session_state.delete_trans_failed = dialog_name
+            st.rerun()     
+    trans_dialog()
 
-detail_style = """
-    {
-        background-color: #EEEEEE;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,155,1);
-        padding: 18px;
-        box-shadow: 0 0 8px rgba(0,0,0,0.2);
-        min-height: 10vh !important;
-        max-height: 10vh !important;
-        overflow-y: auto; /* Nếu nội dung dài thì cuộn bên trong khung */
-    }"""
+# ======== MAIN RENDER =========
+def render_trans_func_panel(category_model, transaction_model):
 
-# ======== RENDER TRANSACTION =========
-def _render_trans_func_panel():
     cAddTrans, cFilter = st.columns([1, 1])
-
     with cAddTrans:
         # Add new transaction
         with st.popover("Add Transaction", icon="➕", use_container_width=True):
-            st.selectbox("Select Type", type_list, key="select_type_add_trans")
+
+            # Select type
+            trans_type_add = st.selectbox("Select Type", get_type_list(), key="trans_type_add")
 
             # Select category
-            current_type_new = st.session_state.get("select_type_add_trans") 
-            if current_type_new == "Income":
-                current_type_new = cate_income
-            elif current_type_new == "Expense":
-                current_type_new = cate_expense       
-            cate_new = st.selectbox("Select Category", current_type_new, key="new_trans_category")
+            st.selectbox("Select Category", category_model.get_category_name_by_type(st.session_state.get("trans_type_add")), key="trans_cate_add")
+            trans_cate_id = category_model.get_category_id_by_name(st.session_state.get("trans_cate_add")) # transform name to id for saving
 
-            # add box       
-            name = st.text_input("Transaction Name", key="new_trans_name")
-            currencies = st.selectbox("Currency", config.CURRENCIES, key="new_trans_currency")
+            # Select Currency
+            trans_currencies = st.selectbox("Currency", get_currencies_list(), key="trans_currencies") # Lấy list currencies từ config
 
             # currencies của VN ko xài phân số (float) nhưng USD thì có, nên nếu set thông số trực tiếp sẽ bị lỗi ko đồng bộ 2 loại dữ liệu,
             # nên phải xét riêng, VND (step=500, format="%d", min_value=0) 3 cái này chung là int, còn 3 cái của USD chung là float
-            currencies = st.session_state.get("new_trans_currency")
-            if currencies == "VND":
-                currencies_step = 500
-                currencies_format = "%.0d"
-                min_value = 200
-            else:
-                currencies_step = 0.1
-                currencies_format = "%.2f"
-                min_value = 0.0 
-            amount = st.number_input("Amount", key="amount", step=currencies_step, min_value=min_value, format=currencies_format) # amout, base on currencies
+            current_currencies = st.session_state.get("trans_currencies")
+            trans_currency_format = get_format_currency(current_currencies) # Lấy format theo currencies
+            currencies_step, currencies_format, min_value = trans_currency_format
+            trans_amount = st.number_input("Amount", key="amount", step=currencies_step, min_value=min_value, format=currencies_format) # amout, base on currencies
 
-            # Vì json lưu dạng ngày + time, nhưng hàm date_input chỉ nhận ngày, nên phải thêm giờ tự động 0:00
-            date = st.date_input("Date", key="new_trans_date")
-            date_time = datetime.combine(date, time.min) #
+            # Input Description
+            trans_description = st.text_area("Description", key="new_trans_description")                 
 
-            description = st.text_input("Description", key="new_trans_description")
+            # Date input, Vì json lưu dạng ngày + time, nhưng hàm date_input chỉ nhận ngày, nên phải thêm giờ tự động 0:00
+            trans_date = st.date_input("Date", key="new_trans_date")
 
+            # Confirmation message
             if st.session_state.get("transaction_added") == True:
                 st.success("Transaction added successfully!")
                 st.session_state["transaction_added"] = False
 
-            transaction_data = {
-                "type": st.session_state.get("select_type_add_trans") ,
-                "category": cate_new,
-                "name": name,
-                "currency": currencies,
-                "amount": amount,
-                "description": description,
-                "created_at": date_time,
-                "last_modified": date_time,
-            }
-
-            if st.button("Comfirm", icon="✔️", use_container_width=True):
-                if not name:
-                    st.error("Transaction name is required!")
-                elif not date:
+            # Button
+            if st.button("✔️ Comfirm", use_container_width=True):
+                if not trans_date:
                     st.error("Date is required!")
-                elif amount <= min_value:
+                elif trans_amount <= min_value:
                     st.error("Amount is required!")
-                else:
-                    init_transaction_models().add_transaction(transaction_data)
+                elif not trans_description or trans_description.strip() == "":
+                    trans_description = "No description"
+                else:              
+                    transaction_model.add_transaction(
+                        transaction_type=trans_type_add, 
+                        category_id=trans_cate_id, 
+                        currencies=trans_currencies,
+                        amount=trans_amount, 
+                        transaction_date=trans_date, 
+                        description=trans_description
+                    )
                     st.session_state["transaction_added"] = True
-                    refresh_page()
+                    st.rerun()
 
     # Filter popover
     with cFilter:
         with st.popover("Filter", icon="🔎", use_container_width=True):    
             # Select type
-            st.selectbox("↔️ Transaction Type", type_list, key="select_type2")
+            cate_type = st.selectbox("↔️ Transaction Type", get_type_list(), key="select_type2")
 
             # Select category
-            if st.session_state.select_type2 == "Income":
-                st.selectbox("📦 Category Name", cate_income, key="select_category2")         
-            elif st.session_state.select_type2 == "Expense":     
-                st.selectbox("📦 Category Name", cate_expense, key="select_category2")
+            st.selectbox("📦 Category Name", category_model.get_category_name_by_type(st.session_state.select_type2), key="select_category2")
             
             # Select date range
-            st.select_slider("📅 Date Range Option", options=config.DEFAULT_TIME_FILTERS, key="date_range2")
+            date_option = get_date_range_options()
+            st.select_slider("📅 Date Range Option", options=list(date_option.keys()), key="date_range2")
 
             # Select currency
-            st.selectbox("💰 Currency", currency_list, key="currency2")
+            st.selectbox("💰 Currency", get_currencies_list(), key="currency2")
 
             # Select amount
             min, max = st.columns(2)
@@ -144,20 +112,238 @@ def _render_trans_func_panel():
             with max:
                 st.number_input("🔼 Maximum Amount", min_value=0, value=0, key="max_amount2")
 
-def _render_trans_details(transaction_model, category_type):
-    with stylable_container(key="trans_details_box", css_styles=body_style):
-        st.write("Transaction Details")
+            # Data dict
+            filter_data = {
+                "transaction_type": cate_type,
+                "category_id": st.session_state.get("select_category2"),
+                "date_range": st.session_state.get("date_range2"),
+                "currency": st.session_state.get("currency2"),
+                "min_amount": st.session_state.get("min_amount2"),
+                "max_amount": st.session_state.get("max_amount2"),
+            }
 
-def _render_transactions():
-    tAll, tExpense, tIncome = st.tabs(["All", "Income", "Expense"])
-    with tAll:
-        st.write("Transactions")
-    with tExpense:
-        _render_trans_details("Expense")
-    with tIncome:
-        st.write("Income")
+            # Button filter
+            if st.button("🔎 Search", use_container_width=True):
+                filter = transaction_model.filter_transactions(filter_data)
+                if filter != []:
+                    render_trans_details(filter, st.session_state.select_type2)
+                else:
+                    st.error("No transactions found!")
 
-    # Header
-    #if current_page == "Transactions":
- 
-    # Main display
+# Render transaction details
+def render_trans_details(category_model, transaction_model, category_type):
+    with stylable_container(key=category_type, css_styles=container_main_css()):
+        
+        all_trans = list(transaction_model.get_transactions())
+
+        # Variable, cái này test tối ưu, lấy all trans (cached) 1 lần để khỏi gọi lên DB nhiều lần, chưa xử lý xuông dưới
+        if category_type == "All":
+            trans_list_by_type = all_trans
+        else:
+            trans_list_by_type = [t for t in all_trans if t["type"] == category_type]
+
+        # dates list sort descending and unique to loop
+        dates = list(sorted({t["date"] for t in trans_list_by_type}, reverse=True))
+
+        if all_trans:
+            st.write(f"{category_type} Transactions — Total: {len(trans_list_by_type)}")
+            st.write("")
+
+            # for loop by dates
+            for d in dates:
+                    
+                # Xử lý nếu chọn All, thì list trans lấy tất cả (hàm riêng), còn ko thì lấy list lọc theo ngày và type
+                if category_type == "All":
+                    trans_by_date_and_type = list(transaction_model.get_transactions(advanced_filters={"start_date": d, "end_date": d}))
+                else:
+                    trans_by_date_and_type = list(transaction_model.get_transactions(advanced_filters={"start_date": d, "end_date": d, "type": category_type}))
+
+                # Get balance and format
+                balance = transaction_model.get_balance_by_date(d)
+                balance = get_format_amount("VND", balance)
+
+                # format date in expander Date
+                formatted_date = format_date(d)
+                format_count = len(trans_by_date_and_type)
+
+                # render date and balance
+                with st.expander(f"{formatted_date} — {format_count} transactions — Balance: {balance}", expanded=False):             
+
+                    # Transactions in dates
+                    for idi, item in enumerate(trans_by_date_and_type):     
+
+                        # custom items, đặt ở ngoài để dùng chung
+                        type = item.get('type')
+                        category_name = category_model.get_category_name_by_id(item.get('category_id')) # dò category name theo category id
+                        description = item.get('description')
+                        
+                        # Format amount+currency
+                        amount = item.get('amount')
+                        if item.get('currency') == "VND": # if currency is VND                          
+                            amount_format = f"{format(amount, ',.0f').replace(",", ".")} {item.get('currency')}"
+                        else:
+                            exchange = transaction_model.exchange_currency(amount, item.get('currency'), "VND")
+                            exchange = format(exchange, ',.0f').replace(",", ".")
+                            amount_format = f"{format(amount, ',.2f').replace(",", ".")} {item.get('currency')} ({exchange} VND)"                                                                          
+
+                        # Date
+                        created_at = item.get('created_at').strftime('%d-%m-%Y')
+                        last_modified = item.get('last_modified').strftime('%d-%m-%Y')                      
+                        
+                        # Render
+                        with st.container():
+                            cDetail, cButton = st.columns([6, 1])
+                            with cDetail:
+                                transaction_card_css(
+                                    type=type,
+                                    category=category_name,
+                                    amount_currency=amount_format,
+                                    description=description,
+                                    created=created_at,
+                                    modified=last_modified
+                                )
+
+                            with cButton:
+                                st.write("") # đẩy xuống
+                                cEdit, cDelete = st.columns(2)
+                                with cEdit:   
+                                    with st.popover("✏️"):        
+                                        # Set key ra ngoài
+                                        key_type = f"edit_type_{category_type}_{item['_id']}"
+                                        key_cate = f"edit_cate_{category_type}_{item['_id']}" 
+                                        key_description = f"edit_description_{category_type}_{item['_id']}"
+                                        key_currency = f"edit_currency_{category_type}_{item['_id']}"       
+                                        key_amount = f"edit_amount_{category_type}_{item['_id']}"                                         
+
+                                        col1, col2 = st.columns([1,1]) # chia 2 cột để ko bị dài quá
+                                        with col1:
+
+                                            # Set default type by current item's type                            
+                                            change_type = state_input(label="Change type", current_data=item["type"], widget=st.selectbox, key=key_type, options=get_type_list()) 
+
+                                            # Set default amount by current item's amount                  
+                                            currencies_step, currencies_format, min_value = get_format_currency(item["currency"])
+                                            
+                                            change_amount = state_input(label="Change amount",
+                                                                        current_data=item["amount"], 
+                                                                        widget=st.number_input, 
+                                                                        key=key_amount, 
+                                                                        min_value=min_value,
+                                                                        step=currencies_step, 
+                                                                        format=currencies_format)  
+                                            
+                                            # Set default description by current item's description
+                                            change_description = state_input(label="Change description", 
+                                                                            current_data=item["description"], 
+                                                                            widget=st.text_area, 
+                                                                            key=key_description)    
+                                                
+                                        with col2:
+                                            # Set category list by current item's category                             
+                                            cate_dict = category_model.get_category_by_type(st.session_state[key_type]) 
+                                            cate_list = {c["name"]: c["_id"] for c in cate_dict} # trả về list đã if elfe ở trên, keys là lấy value (value là tên từng cate)
+                                            cate_edit_options = cate_list.keys()
+
+                                            # Set default category by current item's category
+                                            change_cate_name = st.selectbox("Change category", options=cate_edit_options, key=key_cate)
+                                            change_cate_id = cate_list.get(change_cate_name) # lấy category id theo name              
+
+                                            # Set default currency list by current item's currency                                                                                                                                     
+                                            change_currency = state_input(label="Change currency", 
+                                                                        current_data=item["currency"], 
+                                                                        widget=st.selectbox, 
+                                                                        key=key_currency, 
+                                                                        options=get_currencies_list())                                                                                                                                                  
+
+                                            # Update transaction
+                                            if st.button("✅ Save", key=f"edit_button_{category_type}_{item['_id']}", use_container_width=True):
+                                                if change_description == item['description'] and change_amount == item['amount'] and change_cate_id == item['category_id'] and change_currency == item['currency'] and change_type == item['type']:
+                                                    st.error("No changes were made.")
+                                                else:
+                                                    transaction_model.update_transaction(
+                                                        item['_id'], 
+                                                        type=change_type, 
+                                                        category_id=change_cate_id, 
+                                                        description=change_description, 
+                                                        currencies=change_currency, 
+                                                        amount=change_amount)
+                                                    st.session_state[f"edit_trans_success_{category_type}_{item['_id']}"] = True 
+                                                    st.rerun()
+
+                                            # thông báo sau khi save
+                                            if st.session_state.get(f"edit_trans_success_{category_type}_{item['_id']}"): # nhận state edit thành công
+                                                st.success(f"Transaction '{item['description']}' updated successfully!")
+                                                st.session_state[f"edit_trans_success_{category_type}_{item['_id']}"] = False # reset state
+
+                                        with cDelete:
+                                            if st.button("🗑️", key=f"delete_trans_{category_type}_{item['_id']}"):                        
+                                                st.session_state.trans_confirm_delete = item['description']
+                                                st.session_state.trans_confirm_delete_id = item['_id']
+                                                st.rerun()
+                        # HORIZONTAL LINE
+                        if idi < len(trans_by_date_and_type) - 1: # ko in dòng cuối                   
+                            st.markdown("""<hr style="margin: 0px 0; border: none; border-top: 1px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)                                      
+        else:
+            st.subheader("No transactions found.")
+
+# Main Render, call all render
+def render_transactions():
+    models = st.session_state["models"]
+    category_model = models["category"]
+    transaction_model = models["transaction"]
+
+    with stylable_container(key="menu_box", css_styles=container_page_css()):
+
+        # Header
+        cHeader, cFunc = st.columns([1, 2], vertical_alignment="center")
+        with cHeader:
+            st.header("Transactions")
+        with cFunc:
+            render_trans_func_panel(category_model, transaction_model)
+
+        # Line
+        st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+
+        # Main
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = 0  # Index 0 = "All", control tab default, open "All" tab when open page
+
+        tab_names = ["All", "Expense", "Income"]
+        tabs = st.tabs(tab_names)
+        
+        # Render tất cả tabs nhưng chỉ show nội dung của tab active
+        for (tab, tab_name) in zip(tabs, tab_names): # zip use to combine list, tuple,...
+            with tab:
+                render_trans_details(category_model, transaction_model, category_type=tab_name)
+
+        # Dialog
+        render_trans_dialog(transaction_model)
+
+# Render dialog
+def render_trans_dialog(transaction_model):
+    if st.session_state.get("trans_confirm_delete"): # Đặt cuối trang
+        delete_transaction_dialog(transaction_model)
+
+    if st.session_state.get("delete_trans_success"):
+        dialog_name = st.session_state.delete_trans_success
+
+        @st.dialog("Success!")
+        def trans_success():
+            st.success(f"Transaction '{dialog_name}' deleted successfully!")
+            _, cClose = st.columns([5, 1])
+            if cClose.button("Close", use_container_width=True):
+                st.session_state.delete_trans_success = None # gán none để tắt
+                st.rerun()
+        trans_success()
+
+    if st.session_state.get("delete_trans_failed"): 
+        dialog_name= st.session_state.delete_trans_failed
+
+        @st.dialog(f"Error")
+        def trans_failed():
+            st.error(f"Failed to delete transaction '{dialog_name}'!")     
+            _, cClose = st.columns([5, 1]) # đẩy nút close qua bên phải dialog
+            if cClose.button("Close"):
+                st.session_state.delete_trans_failed = None
+                st.rerun()
+        trans_failed()

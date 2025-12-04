@@ -30,10 +30,17 @@ class DatabaseManager:
         self.db = self.client[config.DATABASE_NAME] # tạo database bằng hàm client[ten database], lấy tên từ config.py
         try:
             self.db.command("ping") # Gửi command Ping tới DB để kiểm tra có kết nối chưa
+
+            self._create_index()
             print("Initialize DB successfully!") # In ra khi kết nối DB thành công
         except Exception as e:
             print(f"Error in connect: {e}")
             raise e
+
+    def _create_index(self):
+        """Index for improve performance"""
+        self.db.transactions.create_index([("user_id", -1), ("date", -1)]) # -1: descending, get newest first
+        self.db.categories.create_index([("user_id", -1), ("type", -1), ("name", -1)], unique=True)
 
     # Hàm get_collection()
     def get_collection(self, collection_name: str):
