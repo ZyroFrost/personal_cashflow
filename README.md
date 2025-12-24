@@ -139,7 +139,7 @@ server_metadata_url = "https://accounts.google.com/.well-known/openid-configurat
 ### Step 4. Deploy the app
 - Click Deploy and Streamlit Cloud will host the app automatically
 ```bash
-https://your-app-name.streamlit.app
+https://personal-cashflow.streamlit.app
 ```
 
 ### Step 5. Update the deployed app (very important)
@@ -155,36 +155,38 @@ git push
 .
 └── finance_tracker/
     ├── .streamlit/
+    │   ├── config.toml
     │   └── secrets.toml
     ├── .env
     ├── .gitignore
+    ├── .vscode
+    ├── src/
+    │   ├── app.py
+    │   ├── utils.py
+    │   ├── analytics/
+    │   │   ├── analyzer.py
+    │   │   └── visualizer.py
+    │   ├── assets/
+    │   │   ├── google_logo.png
+    │   │   ├── logo.png
+    │   │   ├── icon.png
+    │   │   └── styles.py
+    │   ├── core/
+    │   │   ├── database_manager.py
+    │   │   └── config.py
+    │   ├── models/
+    │   │   ├── user_model.py
+    │   │   ├── category_model.py
+    │   │   ├── exchange_rate_model.py
+    │   │   ├── transaction_model.py
+    │   │   └── budget_model.py
+    │   └── views/
+    │       ├── dashboard_view.py
+    │       ├── categories_view.py
+    │       ├── settings_view.py
+    │       ├── transactions_view.py
+    │       └── budgets_view.py
     ├── requirements.txt
-    └── src/
-        ├── app.py
-        ├── utils.py
-        ├── analytics/
-        │   ├── __init__.py
-        │   ├── analyzer.py
-        │   └── visualizer.py
-        ├── assets/
-        │   ├── google_logo.png
-        │   ├── logo.png
-        │   ├── icon.png
-        │   └── styles.py
-        ├── core/
-        │   ├── __init__.py
-        │   ├── database_manager.py
-        │   └── config.py
-        ├── models/
-        │   ├── __init__.py
-        │   ├── category_model.py
-        │   ├── exchange_rate_model.py
-        │   ├── transaction_model.py
-        │   └── user_model.py
-        └── views/
-            ├── __init__.py
-            ├── dashboard_view.py
-            ├── categories_view.py
-            ├── settings_view.py
-            └── transactions_view.py
+    └── README.md
 ```
+## 🖼️ App Screenshots
