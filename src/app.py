@@ -95,14 +95,14 @@ def login_screen():
 #     login_screen()
 #     st.stop() # do not render while not logged in
 
-# if not st.user.is_logged_in:
-#     # cho Streamlit 1 rerun để cập nhật user
-#     if "login_retry" not in st.session_state:
-#         st.session_state["login_retry"] = True
-#         st.rerun()
+if not st.user.is_logged_in:
+    # cho Streamlit 1 rerun để cập nhật user
+    if "login_retry" not in st.session_state:
+        st.session_state["login_retry"] = True
+        st.rerun()
 
-#     login_screen()
-#     st.stop()
+    login_screen()
+    st.stop()
 
 # After login, check user in database
 user_model: UserModel = models['user']
