@@ -112,7 +112,7 @@ def render_category_list(category_model: CategoryModel, category_type: str):
                         with cContent:
                             cleft, cright = st.columns([1, 1])
                             with cleft:
-                                st.write(f"{item.get('icon')} {item.get("name")}")         
+                                st.write(f"{item.get('icon')} {item.get('name')}")         
                                 st.caption(f"Type: {item.get('type')}")
                             with cright:
                                 st.write(f"Created at: {item.get("created_at").strftime("%d-%m-%Y")}")
