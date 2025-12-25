@@ -3,7 +3,7 @@ from models.category_model import CategoryModel
 from models.budgets_model import BudgetModel
 from analytics.analyzer import FinanceAnalyzer
 
-from utils import get_format_amount, get_format_currency, get_date_range_options, get_type_list, get_currencies_list, state_input, get_month_name
+from utils import get_format_amount, get_format_currency, get_currencies_list, state_input, get_month_name
 from assets.styles import container_page_css, container_main_css, render_budget_progress
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 from datetime import datetime
@@ -121,16 +121,17 @@ def render_budgets_details(category_model: CategoryModel, analyzer_model: Financ
 
         if not total_budget_by_type:
             st.subheader("No budget found!")
+        else:
+            # Total budget
+            _, _, min_value = get_format_currency(currency)
+            total_budget = min_value
+            for item in total_budget_by_type:
+                total_budget += analyzer_model.normalize_amount_to_user_currency(item["amount"], item["currency"])
 
-        # Total budget
-        _, _, min_value = get_format_currency(currency)
-        total_budget = min_value
-        for item in total_budget_by_type:
-            total_budget += analyzer_model.normalize_amount_to_user_currency(item["amount"], item["currency"])
+            total_budget = get_format_amount(currency, total_budget)
 
-        total_budget = get_format_amount(currency, total_budget)
-
-        st.write(f"Total budget: {len(total_budget_by_type)} — Total amount: {total_budget}")
+            st.write(f"Total budget: {len(total_budget_by_type)} — Total amount: {total_budget}")
+            
         st.write("")
 
         # Loop through budgets
