@@ -38,7 +38,7 @@ CURRENCIES = {
         "format": "%d",        # Format integer
         "min_value": 0,
         "decimal_places": 0    # Không có số thập phân
-    },
+        },
     "USD": {
         "symbol": "$",
         "symbol_position": "prefix",
@@ -48,7 +48,47 @@ CURRENCIES = {
         "format": "%.2f",      # Format 2 chữ số thập phân
         "min_value": 0.0,
         "decimal_places": 2
-    }
+        },
+    "JPY": {
+        "symbol": "¥",
+        "symbol_position": "prefix",
+        "separator_thousand": ",",
+        "separator_decimal": ".",
+        "step": 1,
+        "format": "%d",
+        "min_value": 0,
+        "decimal_places": 0
+        },
+    "EUR": {
+        "symbol": "€",
+        "symbol_position": "prefix",
+        "separator_thousand": ".",
+        "separator_decimal": ",",
+        "step": 0.01,
+        "format": "%.2f",
+        "min_value": 0.0,
+        "decimal_places": 2
+        },
+    "CNY": {
+        "symbol": "¥",
+        "symbol_position": "prefix",
+        "separator_thousand": ",",
+        "separator_decimal": ".",
+        "step": 0.01,
+        "format": "%.2f",
+        "min_value": 0.0,
+        "decimal_places": 2
+    },
+    "AUD": {
+        "symbol": "$",
+        "symbol_position": "prefix",
+        "separator_thousand": ",",
+        "separator_decimal": ".",
+        "step": 0.01,
+        "format": "%.2f",
+        "min_value": 0.0,
+        "decimal_places": 2
+    },
 }
 
 DEFAULT_CATEGORY_ICONS = {

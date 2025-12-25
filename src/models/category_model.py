@@ -37,7 +37,7 @@ class CategoryModel:
             self.save_category(category_type = "Income", category_name= cate, icon=config.DEFAULT_CATEGORY_ICONS.get(cate, "📁"))
 
     # Save category, ko dùng upsert filter_, vì hàm này tích hợp luôn create và update fields name và type
-    def save_category(self, category_id: str | None = None, category_type: str = "", category_name: str = "", icon: str = ""):
+    def save_category(self, category_id: str | None = None, category_type: str = "", category_name: str = "", icon: str = "📁"):
         """
         Save category (create or update).
         - if category_id == None -> CREATE
