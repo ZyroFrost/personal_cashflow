@@ -120,8 +120,20 @@ class TransactionModel:
             date: Transaction date
             description: Optional description
         """
+
+        # Validate category exists & belongs to user (validate for backend even frontend already validate)
+        category_collection = self.db_manager.get_collection(config.COLLECTIONS["category"])
+        exists = category_collection.find_one({
+            "_id": category_id,
+            "user_id": self.user_id
+        })
+
+        if not exists:
+            raise ValueError("Invalid category") # -> Validate nếu category ko tồn tại và ko thuộc về user thì sẽ báo lỗi Category 
+        
+        # Validate date type
         if not isinstance(date, datetime): # Nếu transaction_date KHÔNG phải kiểu datetime
-           date = handler_datetime(date) # → thì convert nó thành datetime.
+           date = handler_datetime(date) # -> thì convert nó thành datetime.
 
         transaction = {
             'type': type,
@@ -156,20 +168,38 @@ class TransactionModel:
             True if updated successfully, False otherwise
         """
         try:
+            # Validate category exists & belongs to user
+            if "category_id" in kwargs:
+                new_category_id = kwargs["category_id"]
+
+                category_collection = self.db_manager.get_collection(config.COLLECTIONS["category"])
+                exists = category_collection.find_one({
+                    "_id": new_category_id,
+                    "user_id": self.user_id
+                })
+
+                if not exists:
+                    raise ValueError("Invalid category")  
+
             # Add last_modified timestamp
             kwargs['last_modified'] = datetime.now() # thêm field "last_modified" vào đúng cái dict kwargs.
+
             # Build filter and scope by user if available
             filter_ = {'_id': ObjectId(transaction_id),
                        'user_id': self.user_id} # added user_id constraint
             result = self.collection.update_one(filter_, {'$set': kwargs})
             print("Updated transaction successfully", transaction_id)
-            print(result)
-            return result.modified_count > 0
-        except Exception as e:
+            #print(result)
+            return result.modified_count > 0    
+        
+        except ValueError: # nếu là lỗi nghiệp vụ (Invalid category) -> đẩy lên cho View xử lý
+            raise  
+
+        except Exception as e: # nếu là lỗi khác (DB, ObjectId, etc.) -> log + return False
             print(f"Error updating transaction: {e}")
             return False
-        # Với {"$set": transaction_data} Chỉ những field bạn đưa vào transaction_data mới được thay đổi
-        # Các field bạn KHÔNG đưa vào giữ nguyên, không bị xóa
+        # Với {"$set": transaction_data} Chỉ những field đưa vào transaction_data mới được thay đổi
+        # Các field KHÔNG đưa vào giữ nguyên, không bị xóa
 
     # Hàm xóa transaction theo id
     def delete_transaction(self, transaction_id: str):
@@ -177,7 +207,7 @@ class TransactionModel:
             filter = {"_id": ObjectId(transaction_id), 'user_id': self.user_id} # added user_id constraint
             result = self.collection.delete_one(filter)
             print("Deleted transaction successfully", transaction_id)
-            print(result)
+            #print(result)
             return result.deleted_count > 0 # trả về số document đã xóa (0 hoặc 1) để check nút xóa có thành công không
         except Exception as e:
             print(f"Error deleting transaction: {e}")
@@ -235,7 +265,7 @@ class TransactionModel:
         if not transactions:
             return 0
 
-        # 🔥 BATCH: Pre-fetch rates
+        # BATCH: Pre-fetch rates
         exchange_model = ExchangeRateModel()
         unique_currencies = {t['currency'] for t in transactions if t['currency'] != target_currency}
         
@@ -259,6 +289,37 @@ class TransactionModel:
     
     def count_transaction_by_user(self, user_id: ObjectId) -> int:
         return self.collection.count_documents({"user_id": user_id})
+    
+    # Hàm sử dụng aggegate tìm transaction theo user, category, budget_type, month, year (tự động nhận diện budget type month, year)
+    def aggregate_spent_for_budget(self, user_id, category_id, budget_type, month, year):
+
+        # Nhận diện type để lấy date range (truyền vào $gte và $lt)
+        if budget_type == "Monthly":
+            start = datetime(year, month, 1)
+            end = datetime(year + (month == 12), (month % 12) + 1, 1)
+        else:
+            start = datetime(year, 1, 1)
+            end = datetime(year + 1, 1, 1)
+
+        # Filter lấy đúng user_id, category_id, date_range (truyền vào $gte và $lt), sau đó groupby lại tính tổng theo từng currency
+        # Cái này đúng yêu cầu của gv chứ ban đầu là tính trực tiếp từ budget_view.py
+        pipeline = [
+            {
+                "$match": { # Filter lấy data
+                    "user_id": user_id,
+                    "category_id": category_id,
+                    "date": {"$gte": start, "$lt": end}
+                }
+            },
+            {
+                "$group": { # Gộp theo currency và tính tổng amount theo currency
+                    "_id": "$currency",                 # BudgetModel dùng _id
+                    "total_spent": {"$sum": "$amount"}  # BudgetModel dùng total_spent
+                }
+            }
+        ]
+
+        return list(self.collection.aggregate(pipeline))
 
 '''
 if __name__== "__main__":

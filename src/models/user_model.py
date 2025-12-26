@@ -73,12 +73,25 @@ class UserModel:
         self.collection.delete_one({'_id': ObjectId(user_id)})
         return True
     
+    # Rollback if delete_user_with_data fails
     def delete_user_with_data(self, user_id: ObjectId) -> bool:
         uid = ObjectId(user_id)
-        self.db_manager.get_collection(config.COLLECTIONS["transaction"]).delete_many({'user_id': uid})
-        self.db_manager.get_collection(config.COLLECTIONS["category"]).delete_many({'user_id': uid})
-        self.db_manager.get_collection(config.COLLECTIONS["budget"]).delete_many({'user_id': uid})
-        self.db_manager.get_collection(config.COLLECTIONS["goal"]).delete_many({'user_id': uid})
+        client = self.db_manager.client
+
+        with client.start_session() as session:
+            with session.start_transaction():
+                self.db_manager.get_collection("transaction").delete_many(
+                    {'user_id': uid}, session=session
+                )
+                self.db_manager.get_collection("budget").delete_many(
+                    {'user_id': uid}, session=session
+                )
+                self.db_manager.get_collection("category").delete_many(
+                    {'user_id': uid, 'is_default': False}, session=session
+                )
+                self.collection.delete_one(
+                    {'_id': uid}, session=session
+                )
         return True
         
     def get_user_by_email(self, email: str) -> dict:

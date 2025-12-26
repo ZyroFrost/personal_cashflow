@@ -69,6 +69,7 @@ class ExchangeRateModel:
             result = None
         return result["conversion_rates"]
     
+    # Hàm convert đơn giản dùng cho analyzer (ko nhận diện được user_id ở đây)
     def convert_currency(self, amount: float, from_currency: str, to_currency: str) -> float:
         if from_currency == to_currency:
             return amount

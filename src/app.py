@@ -1,14 +1,14 @@
 import streamlit as st
-import io, base64, time, os
+import io, base64, time
 
 from PIL import Image # đọc image từa folder assets
 from streamlit_option_menu import option_menu # thư viện mở rộng của streamlit để add icon với css
 from streamlit_extras.stylable_container import stylable_container
 
+from models.user_model import UserModel
 from models.category_model import CategoryModel
 from models.transaction_model import TransactionModel
-from models.budgets_model import BudgetModel
-from models.user_model import UserModel
+from models.budget_model import BudgetModel
 from analytics.analyzer import FinanceAnalyzer
 from analytics.visualizer import FinanceVisualizer
 
@@ -162,7 +162,6 @@ else:
 models['category'].set_user_id(user_id)
 models['transaction'].set_user_id(user_id)
 models['budget'].set_user_id(user_id)
-# models['goal'].set_user_id(user_id)
 
 # ======== SIDEBAR =========
 with st.sidebar:
@@ -196,15 +195,20 @@ with st.sidebar:
 if st.session_state['current_page'] == "Dashboard":
     analyzer_model = FinanceAnalyzer(st.session_state['user_id'], models['user'], models['category'], models['transaction'])
     render_dashboard(analyzer_model=analyzer_model, transaction_model=models['transaction'], visualizer_model=models['visualizer'])
+
 elif st.session_state['current_page'] == "Categories":
     render_categories()
+
 elif st.session_state['current_page'] == "Transactions":
     analyzer_model = FinanceAnalyzer(st.session_state['user_id'], models['user'], models['category'], models['transaction'])
     render_transactions(analyzer_model=analyzer_model)
+
 elif st.session_state['current_page'] == "Budgets":
     analyzer_model = FinanceAnalyzer(st.session_state['user_id'], models['user'], models['category'], models['transaction'])
     render_budgets(analyzer_model=analyzer_model)
+
 elif st.session_state['current_page'] == "Settings":
     render_settings()
+    
 elif st.session_state['current_page'] == "Log out":
     st.logout()

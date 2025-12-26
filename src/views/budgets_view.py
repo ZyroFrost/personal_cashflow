@@ -1,6 +1,8 @@
 from core import config
+from models import transaction_model
 from models.category_model import CategoryModel
-from models.budgets_model import BudgetModel
+from models.transaction_model import TransactionModel
+from models.budget_model import BudgetModel
 from analytics.analyzer import FinanceAnalyzer
 
 from utils import get_format_amount, get_format_currency, get_currencies_list, state_input, get_month_name
@@ -103,7 +105,7 @@ def render_budgets_func_panel(category_model: CategoryModel, budget_model: Budge
 
                 st.rerun()
 
-def render_budgets_details(category_model: CategoryModel, analyzer_model: FinanceAnalyzer, budget_model: BudgetModel, budget_type: str, currency: str):
+def render_budgets_details(category_model: CategoryModel, analyzer_model: FinanceAnalyzer, budget_model: BudgetModel, transaction_model: TransactionModel, budget_type: str, currency: str):
 
     with stylable_container(key=budget_type, css_styles=container_main_css()):
 
@@ -131,7 +133,7 @@ def render_budgets_details(category_model: CategoryModel, analyzer_model: Financ
             total_budget = get_format_amount(currency, total_budget)
 
             st.write(f"Total budget: {len(total_budget_by_type)} — Total amount: {total_budget}")
-            
+
         st.write("")
 
         # Loop through budgets
@@ -153,26 +155,23 @@ def render_budgets_details(category_model: CategoryModel, analyzer_model: Financ
 
             # Get budget info - amount and currency
             budget_amount_format = analyzer_model.format_amounth_currency_for_user(budget["amount"], budget["currency"])
-            budget_amount = budget["amount"]
+            #budget_amount = budget["amount"]
             budget_currency = budget["currency"]
             
             # Get budget spend by budget type
-            if budget_type == "Monthly":
-                budget_spend = analyzer_model.get_spent_for_month_by_category(category_id, budget_month, budget_year, budget_currency)
-                budget_spend_format = analyzer_model.format_amounth_currency_for_user(budget_spend, budget_currency)
-            else:
-                budget_spend = analyzer_model.get_spent_for_year_by_category(category_id, budget_year, budget_currency)
-                budget_spend_format = analyzer_model.format_amounth_currency_for_user(budget_spend, budget_currency)
+            progress_data = budget_model.get_budget_progress(budget, analyzer_model=analyzer_model, transaction_model=transaction_model)
+            budget_spend = progress_data["total_spent"]
+            budget_spend_format = analyzer_model.format_amounth_currency_for_user(budget_spend, budget_currency)
 
             # Calculate percent for progress bar
-            percent_complete = budget_spend / budget_amount
+            percent_complete = progress_data["percent_complete"]
             percent = round(percent_complete * 100,2)
 
             # Don't allow percent > 100 (error cause progress bar), bỏ vì dùng bar giả từ html css
             #if percent_complete > 1:
             #   percent_complete = 1.0 # 1.0 để giữ thanh bar luôn đầy khi quá 100%
-            st.write("") # đẩy xuống để cân bằng với line
 
+            st.write("") # đẩy xuống để cân bằng với line
             cLeft, cMid,cRight = st.columns([5, 1.5, 1])
             with cLeft.container():
 
@@ -343,6 +342,7 @@ def render_budgets_details(category_model: CategoryModel, analyzer_model: Financ
 def render_budgets(analyzer_model: FinanceAnalyzer):
     models = st.session_state["models"]
     category_model = models["category"]
+    transaction_model = models["transaction"]
     budget_model = models["budget"]
     user_model = models["user"]
     default_currency = user_model.get_default_currency(st.session_state["user_id"])
@@ -362,6 +362,6 @@ def render_budgets(analyzer_model: FinanceAnalyzer):
         # Main
         tMonthly, tYearly = st.tabs(["Monthly", "Yearly"])
         with tMonthly:
-            render_budgets_details(category_model, analyzer_model, budget_model, "Monthly", default_currency)
+            render_budgets_details(category_model, analyzer_model, budget_model, transaction_model, "Monthly", default_currency)
         with tYearly:
-            render_budgets_details(category_model, analyzer_model, budget_model, "Yearly", default_currency)
+            render_budgets_details(category_model, analyzer_model, budget_model, transaction_model, "Yearly", default_currency)

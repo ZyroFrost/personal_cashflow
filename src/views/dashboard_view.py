@@ -57,18 +57,14 @@ def get_cached_category_spending(user_id: str, start_date, end_date):
     return analyzer.get_spending_by_category(start_date, end_date)
 
 @st.cache_data(ttl=300)
-def get_cached_monthly_trend(user_id: str, months=6):
-    """Cache monthly trend for 5 minutes"""
-    from analytics.analyzer import FinanceAnalyzer
+def get_cached_monthly_trend(user_id: str, months=6, currency: str = None):
     models = st.session_state["models"]
-    
     analyzer = FinanceAnalyzer(
         user_id, 
         models["user"], 
         models["category"], 
         models["transaction"]
     )
-    
     return analyzer.get_monthly_trend(months)
 
 # ======== CONFIG =========
@@ -153,7 +149,7 @@ def render_charts(analyzer_model: FinanceAnalyzer, visualizer_model: FinanceVisu
     with col2:
         # st.subheader("Category Breakdown")
         if not category_spending.empty:
-            fig = visualizer_model.plot_pie_chart(category_spending)
+            fig = visualizer_model.plot_pie_chart(category_spending, currency)
             st.plotly_chart(fig, width='stretch')
         else:
             st.info("No expense data available for this period")

@@ -1,4 +1,7 @@
+from math import e
 from models.category_model import CategoryModel
+from models.transaction_model import TransactionModel
+from models.budget_model import BudgetModel
 from utils import is_default_category, get_type_list
 from assets.styles import container_page_css, container_main_css, container_detail_category_css
 
@@ -8,15 +11,37 @@ import streamlit as st
 # ======== DiALOGS =========
 
 # Confirm delete dialog, 2 levels, outer def for get info, models. Inner dialog for show dialog with info
-def delete_category_dialog(category_model, transaction_model):
+def delete_category_dialog(category_model: CategoryModel, transaction_model: TransactionModel, budget_model: BudgetModel):
     name = st.session_state.confirm_delete
-    type = st.session_state.confirm_delete_type
+    #type = st.session_state.confirm_delete_type
     cate_id = st.session_state.confirm_delete_id
-    count_transactions = len(transaction_model.get_transactions(advanced_filters={"category_id": f"{cate_id}"})) # Hàm đếm tổng số trans đang có của cate, để hỏi
+    count_transactions =  transaction_model.collection.count_documents({"user_id": transaction_model.user_id,"category_id": cate_id})
+    count_budgets = budget_model.count_budget_by_category(cate_id) # Đếm cái này count tracsaction vì phải theo category, và tự lọc ra month year
+
+    trans_count_text = f"{count_transactions} transaction" + ("s" if count_transactions != 1 else "")
+    budget_count_text = f"{count_budgets} budget" + ("s" if count_budgets != 1 else "")
 
     # Dialog comfirm delete
-    @st.dialog(f"Category '{name}' has {count_transactions} transactions. Are you sure you want to delete?")
+    @st.dialog(f"Category '{name}' has {trans_count_text} and {budget_count_text}. Are you sure you want to delete?", width="medium")
     def _dialog(): 
+
+        strategy = st.radio("Deletion strategy", options=[
+            "Reassign transactions to another category",
+            "Delete category, all transactions, and all related budgets"], 
+            help="Choose how to handle existing transactions")
+        
+        new_category_id = None
+        
+        if strategy == "Reassign transactions to another category":
+            categories_map = {c["name"]: c["_id"] for c in category_model.get_categories() if c["name"] != name}
+            new_category_name = st.selectbox("Select new category to reassign:", options=categories_map.keys(), index=None, placeholder="Choose a category")
+        else:
+            new_category_name = None
+
+         # Sau khi name thì đổi về id
+        if new_category_name:
+            new_category_id = categories_map[new_category_name]
+
         cCancel, cConfirm = st.columns(2)
 
         # CANCEL
@@ -27,10 +52,18 @@ def delete_category_dialog(category_model, transaction_model):
             st.rerun()
 
         # CONFIRM
-        if cConfirm.button("✅ Confirm", use_container_width=True):
+        # Nếu chưa chọn New category thì nút bị ẩn
+        confirm_disabled = (strategy == "Reassign transactions to another category" and new_category_id is None)
+        if cConfirm.button("✅ Confirm", use_container_width=True, disabled=confirm_disabled):
 
-            result = category_model.delete_category(type, name)
+            result = False
 
+            if strategy == "Reassign transactions to another category":
+                result = category_model.reassign_category(transaction_model, budget_model, old_category_id=cate_id, new_category_id=new_category_id)
+                
+            elif strategy == "Delete category, all transactions, and all related budgets":
+                result = category_model.delete_category(cate_id)
+        
             # Tắt dialog confirm
             st.session_state.confirm_delete = None
             st.session_state.confirm_delete_type = None
@@ -90,7 +123,7 @@ def render_category_func_panel(category_model: CategoryModel):
                 st.session_state["category_added"] = False # reset flag để không hiện lại lần sau
 
 # Render category list
-def render_category_list(category_model: CategoryModel, category_type: str):
+def render_category_list(category_model: CategoryModel, transaction_model: TransactionModel, category_type: str):
     
     with stylable_container(key=f"{category_type}", css_styles=container_main_css()):
         cate_list = category_model.get_category_by_type(category_type) # cái này trả về dict full fields
@@ -160,15 +193,37 @@ def render_category_list(category_model: CategoryModel, category_type: str):
                                                 st.error("Category name not changed!")
                                             elif edit_name in existing_names:
                                                 st.error("Category name already exists")
-                                            else:                                    
+                                            else:                  
+                                                old_name = item["name"] # Capture the category name BEFORE updating, so it can be shown correctly after rerun
+                                                st.session_state[key_old_name] = old_name                
+
                                                 category_model.save_category(item['_id'], edit_type, edit_name, edit_icon)
                                                 st.session_state[f"edit_cate_success_{item['_id']}"] = True         
                                                 st.rerun()
 
                                         # Message after update                     
-                                        if st.session_state.get(f"edit_cate_success_{item['_id']}") == True: # Set thêm key cho vòng lặp
-                                            st.success(f"Category '{st.session_state[key_old_name]}' updated to '{edit_name}' successfully!")
-                                            st.session_state[f"edit_cate_success_{item['_id']}"] = False # Reset session state                                                                                              
+                                        if st.session_state.get(f"edit_cate_success_{item['_id']}") == True: # if success
+
+                                            # Show dialog
+                                            @st.dialog(f"Category updated successfully!")            
+                                            def edit_category_dialog():
+
+                                                # Count number of transactions related to category 
+                                                count_transactions = transaction_model.collection.count_documents({
+                                                    "user_id": transaction_model.user_id,
+                                                    "category_id": item["_id"]
+                                                    })
+                                                st.success(f"Category '{st.session_state[key_old_name]}' was renamed to '{edit_name}' "  
+                                                           f"with {count_transactions} related transaction"
+                                                           f"{('s' if count_transactions != 1 else '')} remain linked.")
+
+                                                if st.button("Close", use_container_width=True):
+                                                    st.session_state[f"edit_cate_success_{item['_id']}"] = None
+                                                    st.session_state[key_old_name] = None # Reset session state (để đổi tên liên tục ko bị dính tên cũ)
+                                                    st.rerun()                                                               
+                                            edit_category_dialog()        
+                                            st.session_state[f"edit_cate_success_{item['_id']}"] = False # Reset session state                
+                                                                                                      
                                 else:
                                     st.popover("✏️", disabled=True) # Disable default
                 
@@ -189,6 +244,7 @@ def render_categories():
     models = st.session_state["models"]   # Lấy model từ App.py
     category_model = models["category"]
     transaction_model = models["transaction"]
+    budget_model = models["budget"]
     
     with stylable_container(key="category_page_box", css_styles=container_page_css()):
 
@@ -205,18 +261,18 @@ def render_categories():
         # Main
         tExpense, tIncome = st.tabs(["Expense", "Income"])
         with tExpense:
-            render_category_list(category_model, "Expense")
+            render_category_list(category_model, transaction_model, "Expense")
         with tIncome:
-            render_category_list(category_model, "Income")
+            render_category_list(category_model, transaction_model, "Income")
 
         # Dialog
-        render_dialog(category_model, transaction_model)
+        render_dialog(category_model, transaction_model, budget_model)
 
 # Render Dialog
-def render_dialog(category_model, transaction_model):
+def render_dialog(category_model, transaction_model, budget_model):
     # Confirm delete call
     if st.session_state.get("confirm_delete"):
-        delete_category_dialog(category_model, transaction_model)
+        delete_category_dialog(category_model, transaction_model, budget_model)
 
     # Success dialog
     if st.session_state.get("delete_success"): # nếu state nhận dc delete_success

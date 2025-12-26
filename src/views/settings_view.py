@@ -2,7 +2,7 @@ import streamlit as st
 from models.user_model import UserModel
 from models.category_model import CategoryModel
 from models.transaction_model import TransactionModel
-from models.budgets_model import BudgetModel
+from models.budget_model import BudgetModel
 from utils import get_currencies_list
 from assets.styles import container_page_css
 from streamlit_extras.stylable_container import stylable_container

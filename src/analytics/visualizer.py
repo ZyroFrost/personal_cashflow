@@ -28,8 +28,8 @@ class FinanceVisualizer:
             title='Spending by Category',
             #labels={'Total': 'Amount', 'Category': 'Category'},
             color='Category',
-            #color_discrete_sequence=px.colors.qualitative.Set2,
-            color_discrete_sequence=px.colors.qualitative.Pastel1,
+            color_discrete_sequence=px.colors.qualitative.Set2,
+            #color_discrete_sequence=px.colors.qualitative.Pastel1,
             #color_discrete_sequence=px.colors.qualitative.G10,
             # color_discrete_sequence=px.colors.sequential.Plasma   
         )
@@ -37,7 +37,7 @@ class FinanceVisualizer:
         fig.update_traces(
             #texttemplate='%{text}',       # format tiền (ko dùng vì phải lấy format chuẩn từ utils.py)
             textposition='outside',         # hiện trên đầu cột
-            hovertemplate="<b>%{x}</b><br>%{text}<extra></extra>"
+            hovertemplate="<b>%{x}</b><br>Total = %{text}<extra></extra>"
         )
 
         fig.update_yaxes(
@@ -56,10 +56,16 @@ class FinanceVisualizer:
         return fig
     
     @staticmethod
-    def plot_pie_chart(category_data):
+    def plot_pie_chart(category_data, currency):
         """Create a pie chart to visualize spending by category."""
         if category_data.empty:
             return None
+        
+        # Format tiền từ utils.py
+        category_data = category_data.copy()
+        category_data["Total_text"] = category_data["Total"].apply(
+            lambda x: get_format_amount(currency, x)
+        )
         
         fig = px.pie(
             category_data,
@@ -67,13 +73,23 @@ class FinanceVisualizer:
             names='Category',
             title='Expense Distribution by Category',
             color='Category',
-            #color_discrete_sequence=px.colors.qualitative.Set2,
-            color_discrete_sequence=px.colors.qualitative.Pastel1,
+            color_discrete_sequence=px.colors.qualitative.Set2,
+            #color_discrete_sequence=px.colors.qualitative.Pastel1,
             #color_discrete_sequence=px.colors.qualitative.G10,
             #color_discrete_sequence=px.colors.sequential.Plasma,
             hole=0.4)
         
-        fig.update_traces(textposition='inside', textinfo='percent+label')
+        fig.update_traces(
+            customdata=category_data[["Total_text"]],
+            hovertemplate=(
+                "<b>%{label}</b><br>"
+                "Total = %{customdata[0]}<extra></extra>"
+            ),
+            textposition="inside",
+            textinfo="percent+label",
+            hoverlabel=dict(align="left") # Align the hover label to the left
+        )
+
         fig.update_layout(
             showlegend=False,
             height=500

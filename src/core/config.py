@@ -17,7 +17,7 @@ COLLECTIONS = {
     "transaction": "transactions",
     "category": "categories",
     "budget": "budgets",
-    "goal": "goals",
+    #"goal": "goals",
     "exchange_rate": "exchange_rates"
 }
 

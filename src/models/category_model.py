@@ -93,17 +93,76 @@ class CategoryModel:
         print(doc)
         return True
 
-    # Hàm xóa category
-    def delete_category(self, category_type: str, category_name: str):
-        result = self.collection.delete_one({"type": category_type, "name": category_name, "user_id": self.user_id}) # add user_id condition
-        return result.deleted_count  # trả về số document đã xóa (0 hoặc 1) để check nút xóa có thành công không
+    # Hàm xóa category (hàm cũ, chỉ xóa cate, ko xóa budget kèm theo)
+    # def delete_category(self, category_type: str, category_name: str):
+    #     result = self.collection.delete_one({"type": category_type, "name": category_name,"user_id": self.user_id}) # add user_id condition
+    #     return result.deleted_count  # trả về số document đã xóa (0 hoặc 1) để check nút xóa có thành công không
 
-    # Hàm cập nhập category
+    # Hàm cập nhập category (đã tích hợp chung với save_category)
     # def update_category(self, category_id: str, category_data: dict):
     #     result = self.collection.update_one(
     #         {"_id": ObjectId(category_id), "user_id": self.user_id}, # cập nhập thêm điều kiện user_id để tránh người dùng khác cập nhập category của người khác
     #         {"$set": category_data}) # $set là toán tử của update dữ liệu, set dữ liệu mới cần đổi
     #     return result.modified_count > 0 # trả về true false cập nhập (0 hoặc 1), nếu 1 là thành công thì mới return dữ liệu
+
+    # Hàm xóa category mới, xóa category và budget kèm theo
+    def delete_category(self, category_id: ObjectId):
+
+        # Delete budgets
+        budget_collection = self.db_manager.get_collection(config.COLLECTIONS['budget'])
+        budget_collection.delete_many({
+            "user_id": self.user_id,
+            "category_id": category_id
+        })
+
+        # Delete transactions
+        trans_collection = self.db_manager.get_collection(config.COLLECTIONS['transaction'])
+        trans_collection.delete_many({
+            "user_id": self.user_id,
+            "category_id": category_id
+        })
+
+        # Delete category
+        result = self.collection.delete_one({"_id": category_id,"user_id": self.user_id})
+
+        return result.deleted_count > 0
+
+    def reassign_category(self, transaction_model, budget_model, old_category_id, new_category_id):
+
+        old_id = ObjectId(old_category_id)
+        new_id = ObjectId(new_category_id)
+
+        # Reassign transactions
+        transaction_model.collection.update_many(
+            {
+                "user_id": self.user_id,
+                "category_id": old_id
+            },
+            {
+                "$set": {
+                    "category_id": new_id,
+                    "last_modified": datetime.now()
+                }
+            }
+        )
+
+        # Reassign budgets
+        budget_model.collection.update_many(
+            {
+                "user_id": self.user_id,
+                "category_id": old_id
+            },
+            {
+                "$set": {
+                    "category_id": new_id,
+                    "last_modified": datetime.now()
+                }
+            }
+        )
+
+        # Delete old category
+        self.collection.delete_one({"_id": old_id, "user_id": self.user_id})
+        return True
 
     def get_categories(self):
         if not self.user_id:

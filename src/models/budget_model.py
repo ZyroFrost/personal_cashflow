@@ -88,6 +88,43 @@ class BudgetModel:
     def count_budget_by_user(self, user_id: ObjectId) -> int:
         return self.collection.count_documents({"user_id": user_id})
     
+    def count_budget_by_category(self, category_id: ObjectId) -> int:
+        return self.collection.count_documents({"user_id": self.user_id, "category_id": category_id})
+    
+    # Hàm tính process bar (lấy từ aggregate bên transaction model)
+    def get_budget_progress(self, budget, analyzer_model, transaction_model):
+ 
+        # Get total spent (đã group by currency)
+        raw_spent_by_currency = transaction_model.aggregate_spent_for_budget(
+            user_id=budget["user_id"],
+            category_id=budget["category_id"],
+            budget_type=budget["budget_type"],
+            month=budget.get("month"),
+            year=budget["year"]
+        )
+
+        # Convert theo currency 1 lần sau khi đã có tổng
+        spent_converted = 0.0
+        for row in raw_spent_by_currency:
+            amount = row["total_spent"] # tổng tiền
+            source_currency = row["_id"] # currency đã groupby
+
+            # Convert to budget currency
+            converted = analyzer_model.exchange_rate_model.convert_currency(
+                amount=amount,
+                from_currency=source_currency,
+                to_currency=budget["currency"]
+            )
+            spent_converted += converted
+
+        amount_budget = budget.get("amount", 0)
+        percent_complete = spent_converted / amount_budget if amount_budget > 0 else 0
+
+        return {
+            "total_spent": spent_converted,
+            "percent_complete": percent_complete
+        }
+
 '''
 if __name__ == "__main__":
     budget_model = BudgetModel()

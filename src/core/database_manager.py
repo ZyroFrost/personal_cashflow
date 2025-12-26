@@ -37,10 +37,20 @@ class DatabaseManager:
             print(f"Error in connect: {e}")
             raise e
 
+    # Create indexes for query performance and data integrity (unique constraints where applicable)
     def _create_index(self):
         """Index for improve performance"""
+        # Unique index to enforce one user per email
+        self.db.users.create_index("email", unique=True)
+
+        # Non-unique index to optimize queries by user and sort transactions by date (newest first)
         self.db.transactions.create_index([("user_id", -1), ("date", -1)]) # -1: descending, get newest first
+
+        # Unique index to prevent duplicate category names per user and category type
         self.db.categories.create_index([("user_id", -1), ("type", -1), ("name", -1)], unique=True)
+
+        # Unique index to enforce one budget per user, category, and time period (month/year)
+        self.db.budgets.create_index([("user_id", -1), ("category_id", -1), ("budget_type", -1), ("month", -1), ("year", -1)], unique=True)
 
     # Hàm get_collection()
     def get_collection(self, collection_name: str):
