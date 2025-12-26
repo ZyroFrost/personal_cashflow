@@ -1,5 +1,5 @@
 # ExchangeRateModel chỉ phụ trách chuyển đôi giá trị tiền tệ và cập nhập giá trị tiền tệ mới nhất sau mỗi 24h
-# Các hàm tính toán ở đây được gọi qua analyzer để xử lý tiếp, ko gọi trực tiếp từ Model này
+# Hàm convert ở đây được gọi qua analyzer để xử lý tiếp, các model khác ko gọi hàm convert trực tiếp từ Model này
 
 from datetime import datetime, timedelta
 from core.database_manager import DatabaseManager
