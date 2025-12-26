@@ -32,7 +32,7 @@ def delete_category_dialog(category_model: CategoryModel, transaction_model: Tra
         
         new_category_id = None
         
-        if strategy == "Reassign transactions to another category":
+        if strategy == "Reassign all related transactions and budgets to another category":
             categories_map = {c["name"]: c["_id"] for c in category_model.get_categories() if c["name"] != name}
             new_category_name = st.selectbox("Select new category to reassign:", options=categories_map.keys(), index=None, placeholder="Choose a category")
         else:
@@ -53,7 +53,7 @@ def delete_category_dialog(category_model: CategoryModel, transaction_model: Tra
 
         # CONFIRM
         # Nếu chưa chọn New category thì nút bị ẩn
-        confirm_disabled = (strategy == "Reassign transactions to another category" and new_category_id is None)
+        confirm_disabled = (strategy == "Reassign all related transactions and budgets to another category" and new_category_id is None)
         if cConfirm.button("✅ Confirm", use_container_width=True, disabled=confirm_disabled):
 
             result = False
