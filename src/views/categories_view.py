@@ -1,4 +1,3 @@
-from math import e
 from models.category_model import CategoryModel
 from models.transaction_model import TransactionModel
 from models.budget_model import BudgetModel
@@ -25,23 +24,30 @@ def delete_category_dialog(category_model: CategoryModel, transaction_model: Tra
     @st.dialog(f"Category '{name}' has {trans_count_text} and {budget_count_text}. Are you sure you want to delete?", width="medium")
     def _dialog(): 
 
-        strategy = st.radio("Deletion strategy", options=[
-            "Reassign all related transactions and budgets to another category",
-            "Delete category, all transactions, and all related budgets"], 
-            help="Choose how to handle existing transactions")
-        
-        new_category_id = None
-        
-        if strategy == "Reassign all related transactions and budgets to another category":
-            categories_map = {c["name"]: c["_id"] for c in category_model.get_categories() if c["name"] != name}
-            new_category_name = st.selectbox("Select new category to reassign:", options=categories_map.keys(), index=None, placeholder="Choose a category")
+        has_dependencies = (count_transactions > 0 or count_budgets > 0)
+        new_category_id = None # Default value để ko báo lỗi
+        new_category_name = None 
+
+        if has_dependencies:
+            strategy = st.radio("Deletion strategy", options=[
+                "Reassign all related transactions and budgets to another category",
+                "Delete category, all transactions, and all related budgets"], 
+                help="Choose how to handle existing transactions")
+            
+            if strategy == "Reassign all related transactions and budgets to another category":
+                categories_map = {c["name"]: c["_id"] for c in category_model.get_categories() if c["name"] != name}
+                new_category_name = st.selectbox("Select new category to reassign:", options=categories_map.keys(), index=None, placeholder="Choose a category")
+            else:
+                new_category_name = None
+
+            # Sau khi name thì đổi về id
+            if new_category_name:
+                new_category_id = categories_map[new_category_name]
+
         else:
-            new_category_name = None
+            strategy = "Delete category" # Ko có trans và budget thì gán mặc định strategy này để gọi hàm xóa
 
-         # Sau khi name thì đổi về id
-        if new_category_name:
-            new_category_id = categories_map[new_category_name]
-
+        # Render button
         cCancel, cConfirm = st.columns(2)
 
         # CANCEL
@@ -61,7 +67,7 @@ def delete_category_dialog(category_model: CategoryModel, transaction_model: Tra
             if strategy == "Reassign all related transactions and budgets to another category":
                 result = category_model.reassign_category(transaction_model, budget_model, old_category_id=cate_id, new_category_id=new_category_id)
                 
-            elif strategy == "Delete category, all transactions, and all related budgets":
+            elif strategy in ["Delete category", "Delete category, all transactions, and all related budgets"]:
                 result = category_model.delete_category(cate_id)
         
             # Tắt dialog confirm
@@ -70,7 +76,13 @@ def delete_category_dialog(category_model: CategoryModel, transaction_model: Tra
 
             # Mở dialog message
             if result: # nếu xóa thanh cong
-                st.session_state.delete_success = name # gán trạng thái xóa thanh cong thành = name (delete_success = confirm_delete)
+                st.session_state.delete_success = name  # gán trạng thái xóa thành công = name (delete_success = confirm_delete)    
+                st.session_state.delete_success_category_name = new_category_name 
+
+                if strategy == "Reassign all related transactions and budgets to another category":
+                    st.session_state.delete_success_strategy = strategy
+                else:
+                    st.session_state.delete_success_strategy = None
             else:
                 st.session_state.delete_failed = name
                 
@@ -276,11 +288,16 @@ def render_dialog(category_model, transaction_model, budget_model):
 
     # Success dialog
     if st.session_state.get("delete_success"): # nếu state nhận dc delete_success
-        name = st.session_state.delete_success # gán name = trạng thái đã xóa
+        name = st.session_state.delete_success # get old category name
+        new_category_name = st.session_state.delete_success_category_name
+        strategy = st.session_state.get("delete_success_strategy")
 
         @st.dialog("Success") # Tạo dialog success
         def _success():
-            st.success(f"Category '{name}' deleted successfully!") # Trong dialog success hiển thị thông báo xóa thanh cong
+            st.success(f"Category '{name}' deleted successfully!\n\n") # Trong dialog success hiển thị thông báo xóa thanh cong
+                       
+            if strategy == "Reassign all related transactions and budgets to another category":
+                st.success(f"All related transactions and budgets were reassigned to category '{new_category_name}'")
 
             _, cClose = st.columns([5, 1]) # đẩy nút close qua bên phải dialog
             with cClose:
