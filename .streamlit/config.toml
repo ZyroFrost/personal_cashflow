@@ -3,12 +3,24 @@ pythonVersion = "3.11"
 
 [theme]
 base = "light"
-primaryColor = "red"
+
+# Màu accent CHUNG (focus, slider, select, active)
+primaryColor = "#4E79A7"
+
+# Màu viền chung cho toàn app (bao gồm cả metric nếu nằm trong container)
+borderColor = "#6B93B8"  # secondary
+
+# Độ bo góc cho nút (ví dụ: "0.5rem" hoặc "none", "full")
+buttonRadius = "0.5rem"
+
+# Độ bo góc chung cho các thành phần khác như khung metric/container
+baseRadius = "0.5rem"
 
 [theme.sidebar]
 backgroundColor = "white" # màu nền sidebar
 secondaryBackgroundColor = "white" #nền vùng input trong sidebar
 textColor = "black" # màu chữ
-primaryColor = "grey" # màu accent (focus, hover, selection) trong sidebar
-borderColor = "mediumSlateBlue" # showWidgetBorder: màu và hiển thị border
+
+primaryColor = "#4E79A7" # màu accent (focus, hover, selection) trong sidebar
+borderColor = "#6B93B8"  # secondary # showWidgetBorder: màu và hiển thị border
 showWidgetBorder = true

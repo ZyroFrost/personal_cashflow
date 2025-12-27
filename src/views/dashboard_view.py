@@ -1,4 +1,4 @@
-from assets.styles import container_page_css, container_main_css
+from assets.styles import container_page_css, container_main_css, custom_line
 from models.transaction_model import TransactionModel
 from analytics.analyzer import FinanceAnalyzer
 from analytics.visualizer import FinanceVisualizer
@@ -154,7 +154,7 @@ def render_charts(analyzer_model: FinanceAnalyzer, visualizer_model: FinanceVisu
         else:
             st.info("No expense data available for this period")
         
-    st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 1px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+    custom_line()
 
     # Monthly trend
     st.subheader("Monthly Trend")
@@ -185,7 +185,7 @@ def render_dashboard(analyzer_model: FinanceAnalyzer, transaction_model:Transact
             render_dashboard_func_panel()
 
         # Line ngang sát menu
-        st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+        custom_line()
         
         with stylable_container(key="main_box", css_styles=container_main_css()):
 
@@ -200,7 +200,7 @@ def render_dashboard(analyzer_model: FinanceAnalyzer, transaction_model:Transact
             start_date, end_date = date_ranges[date_range_option]
             render_metric(analyzer_model, start_date, end_date)
 
-            st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 1px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+            custom_line()
 
             # Charts
             render_charts(analyzer_model, visualizer_model, start_date, end_date, default_currency)

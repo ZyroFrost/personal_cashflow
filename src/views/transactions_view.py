@@ -4,7 +4,7 @@ from models.transaction_model import TransactionModel
 from analytics.analyzer import FinanceAnalyzer
 
 from utils import get_format_amount, get_format_currency, get_date_range_options, get_type_list, get_currencies_list, state_input, format_date
-from assets.styles import container_page_css, container_main_css, transaction_card_css
+from assets.styles import container_page_css, container_main_css, small_btn, transaction_card_css, custom_line, small_btn
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 from datetime import datetime
 import streamlit as st       
@@ -195,7 +195,6 @@ def render_trans_details(user_model: UserModel, category_model: CategoryModel, t
     if category_type != "All":
         filters["type"] = category_type
 
-
     with stylable_container(key=category_type, css_styles=container_main_css()):
 
         # Repare filter
@@ -226,20 +225,26 @@ def render_trans_details(user_model: UserModel, category_model: CategoryModel, t
             def set_expand_all(value: bool):
                 st.session_state.expand_all = value
 
-            cTotal, cExpanderOpen, cExpanderClose = st.columns([7, 1, 1])
+            cTotal, cExpanderOpen, cExpanderClose = st.columns([7, 1, 1], vertical_alignment="top", gap="small")
             with cTotal:
                 st.write(f"{category_type} Transactions — Total: {len(trans_list_by_type)}")
                 st.write("")
-
+            
+            # Fix button height
+            small_btn(category_type=category_type) # thêm tham số category_type để chạy vòng lặp ko bị trùng key cho mỗi nút
+            
             # Expander open
             with cExpanderOpen:
-                st.button("Expand All", width="stretch", key=f"{category_type}_expand_all", on_click=set_expand_all, args=(True,))
+            # Bọc nút trong một container có key riêng biệt
+                with st.container(key=f"small_btn1_{category_type}"):
+                    st.button("Expand All", key=f"{category_type}_expand_all", on_click=set_expand_all, args=(True,), width="stretch")
 
             with cExpanderClose:
-                st.button("Collapse All", width="stretch", key=f"{category_type}_collapse_all", on_click=set_expand_all, args=(False,))
+                with st.container(key=f"small_btn2_{category_type}"):
+                    st.button("Collapse All", key=f"{category_type}_collapse_all", on_click=set_expand_all, args=(False,), width="stretch")
 
             # for loop by dates
-            # 🔥 OPTIMIZED: Group transactions by date in memory
+            # OPTIMIZED: Group transactions by date in memory
             from collections import defaultdict
             trans_by_date_dict = defaultdict(list)
             for t in trans_list_by_type:
@@ -409,7 +414,7 @@ def render_transactions(analyzer_model: FinanceAnalyzer):
             render_trans_func_panel(category_model, transaction_model)
 
         # Line
-        st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+        custom_line()
 
         # Main
         # Force reset to "All" tab when navigating to Transactions page

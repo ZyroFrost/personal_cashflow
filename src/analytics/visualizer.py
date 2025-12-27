@@ -28,10 +28,22 @@ class FinanceVisualizer:
             title='Spending by Category',
             #labels={'Total': 'Amount', 'Category': 'Category'},
             color='Category',
-            color_discrete_sequence=px.colors.qualitative.Set2,
+            #color_discrete_sequence=px.colors.qualitative.Set3,
+            #color_discrete_sequence=px.colors.qualitative.Set2,
             #color_discrete_sequence=px.colors.qualitative.Pastel1,
+            #color_discrete_sequence=px.colors.qualitative.Pastel2,
             #color_discrete_sequence=px.colors.qualitative.G10,
-            # color_discrete_sequence=px.colors.sequential.Plasma   
+            #color_discrete_sequence=px.colors.sequential.Plasma   
+
+            color_discrete_sequence=[
+                "#4E79A7",  # primary (anchor)
+                "#6B93B8",  # secondary
+                "#8FAFD1",  # light blue
+                "#B7CCE3",  # very light blue
+                "#D6E3F1",  # background-ish
+                "#9CA3AF",  # neutral gray
+                "#E5E7EB",  # divider / subtle
+            ]
         )
         
         fig.update_traces(
@@ -73,11 +85,24 @@ class FinanceVisualizer:
             names='Category',
             title='Expense Distribution by Category',
             color='Category',
-            color_discrete_sequence=px.colors.qualitative.Set2,
+            hole=0.4,
+            #color_discrete_sequence=px.colors.qualitative.Set3,
+            #color_discrete_sequence=px.colors.qualitative.Set2,
             #color_discrete_sequence=px.colors.qualitative.Pastel1,
+            #color_discrete_sequence=px.colors.qualitative.Pastel2,
             #color_discrete_sequence=px.colors.qualitative.G10,
             #color_discrete_sequence=px.colors.sequential.Plasma,
-            hole=0.4)
+
+            color_discrete_sequence=[
+                "#4E79A7",  # primary (anchor)
+                "#6B93B8",  # secondary
+                "#8FAFD1",  # light blue
+                "#B7CCE3",  # very light blue
+                "#D6E3F1",  # background-ish
+                "#9CA3AF",  # neutral gray
+                "#E5E7EB",  # divider / subtle
+            ]
+        )
         
         fig.update_traces(
             customdata=category_data[["Total_text"]],

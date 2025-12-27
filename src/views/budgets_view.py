@@ -1,12 +1,11 @@
 from core import config
-from models import transaction_model
 from models.category_model import CategoryModel
 from models.transaction_model import TransactionModel
 from models.budget_model import BudgetModel
 from analytics.analyzer import FinanceAnalyzer
 
 from utils import get_format_amount, get_format_currency, get_currencies_list, state_input, get_month_name
-from assets.styles import container_page_css, container_main_css, render_budget_progress
+from assets.styles import container_page_css, container_main_css, render_budget_progress, custom_line
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 from datetime import datetime
 import streamlit as st      
@@ -357,7 +356,7 @@ def render_budgets(analyzer_model: FinanceAnalyzer):
             render_budgets_func_panel(category_model, budget_model)
 
         # Line
-        st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+        custom_line()
 
         # Main
         tMonthly, tYearly = st.tabs(["Monthly", "Yearly"])

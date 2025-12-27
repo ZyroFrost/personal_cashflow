@@ -38,7 +38,12 @@ def set_global_css():
 def container_login_screen_css():
     page = """
         {
-            background-color: white;
+            background: linear-gradient(
+                to right,
+                white 34%,
+                white 70%,
+                #e5e7eb 100%
+            );
             display: flex;
             flex-direction: column;
             justify-content: center; /* Căn giữa theo chiều dọc */
@@ -49,8 +54,10 @@ def container_login_screen_css():
             padding: 34px !important; /* Khoảng đệm trong */
 
             /* Thêm đường viền */
-            border: 2px solid #4682B4 !important; /* Độ dày, kiểu và màu sắc */
-            border-radius: 0px; /* Bo góc nếu muốn, theo theme.baseRadius */
+            /* border: 2px solid #4682B4 !important;  Độ dày, kiểu và màu sắc */
+            /* border-radius: 0px; /* Bo góc nếu muốn, theo theme.baseRadius */
+
+            /* box-shadow: inset -8px 0 16px gray, inset -8px 0 16px gray; */
         }
     """
     return page
@@ -77,6 +84,39 @@ def container_login_screen_image_css():
         """,
         unsafe_allow_html=True
 )
+    
+def custom_line():
+    line_color = "#4E79A7"
+    st.markdown(
+        f"""
+        <hr style="
+            margin: 10px 0;
+            padding-top: 15px;
+            border: none;
+            border-top: 3px solid {line_color};
+            opacity: 0.5;
+        ">
+        """,
+        unsafe_allow_html=True
+
+    #st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+    )
+
+def small_btn(category_type):
+    st.html(
+        f"""
+        <style>
+        /* Nhắm mục tiêu vào nhiều key cùng lúc */
+        div.st-key-small_btn1_{category_type} div.stButton > button,
+        div.st-key-small_btn2_{category_type} div.stButton > button {{
+            min-height: 1.5rem !important;
+            height: 1.5rem !important;
+            padding: 0px 5px !important;
+            font-size: 0.8rem !important;
+        }}
+        </style>
+        """
+    )
 
 def container_page_css():
     # tùy chỉnh cho phần menu
@@ -108,7 +148,7 @@ def container_detail_category_css():
         {
             background-color: #EEEEEE;
             border-radius: 10px;
-            border: 1px solid gray;
+            border: 1px solid #6B93B8;
             padding: 22px;
             box-shadow: 0 0 8px rgba(0,0,0,0.2);
             /* min-height: 12.5vh !important; */
@@ -116,20 +156,6 @@ def container_detail_category_css():
         }
     """
     return detail_style 
-
-# def container_detail_budget_css():
-#     detail_style = """
-#         {
-#             background-color: #EEEEEE;
-#             border-radius: 10px;
-#             border: 1px solid gray;
-#             padding: 22px;
-#             box-shadow: 0 0 8px rgba(0,0,0,0.2);
-#             /* min-height: 12.5vh !important; */
-#             /* max-height: 12.5vh !important; */
-#         }
-#     """
-#     return detail_style 
 
 def option_menu_css():
     # Tùy chỉnh cho option_menu
@@ -153,12 +179,13 @@ def google_icon_css():
 def transaction_card_css(type: str, category: str, amount_currency: str, description: str, icon: str , created, modified):
     arrow = "+" if type == "Income" else "-"
     color = "#1caa57" if type == "Income" else "#e74c3c"
+    border_color = "#6B93B8"
 
     st.markdown(f"""
     <div style="
         padding: 12px;
         border-radius: 10px;
-        border: 0px solid #ddd;
+        border: 0px solid {border_color};
         background: white;
         margin-bottom: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -185,8 +212,8 @@ def transaction_card_css(type: str, category: str, amount_currency: str, descrip
 
 def transaction_expander_css():
     # background color
-    color_when_close = "#b9b9b9"
-    color_when_open = "#CAC4B4"
+    color_when_close = "#EEF3F8"
+    color_when_open = "#DCE6F2"
     color_background = "#ffffff"
 
     # text color

@@ -2,7 +2,7 @@ from models.category_model import CategoryModel
 from models.transaction_model import TransactionModel
 from models.budget_model import BudgetModel
 from utils import is_default_category, get_type_list
-from assets.styles import container_page_css, container_main_css, container_detail_category_css
+from assets.styles import container_page_css, container_main_css, container_detail_category_css, custom_line
 
 from streamlit_extras.stylable_container import stylable_container # thư viện mở rộng của streamlit để add container với css
 import streamlit as st
@@ -268,7 +268,7 @@ def render_categories():
             render_category_func_panel(category_model)
 
         # Line
-        st.markdown("""<hr style="margin: 10px 0; border: none; border-top: 2px solid #333; opacity: 0.3;">""", unsafe_allow_html=True)
+        custom_line()
             
         # Main
         tExpense, tIncome = st.tabs(["Expense", "Income"])
