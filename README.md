@@ -150,8 +150,7 @@ git commit -m "Update app"
 git push
 ```
 
-## 🚀 Quick Start (5 minutes)
-
+## 🔥 Quick Start (5 minutes)
 ### Prerequisites
 - Python 3.10+
 - MongoDB Atlas account (free)
