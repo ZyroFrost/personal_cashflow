@@ -1,4 +1,4 @@
-# 📊 Finance Tracker – Streamlit + MongoDB
+<img width="1797" height="644" alt="image" src="https://github.com/user-attachments/assets/a9c7f24a-67ee-48ef-af59-1651aabafa5d" /># 📊 Finance Tracker – Streamlit + MongoDB
 ## 🧩 Overview
 Finance Tracker is a lightweight financial management application that helps users keep track of their spending and earnings. It supports adding and editing transactions, organizing them by category and date,
 and displaying helpful charts to understand financial habits and gain better insights. The app is built with Streamlit and uses MongoDB Atlas to store data securely and reliably.
@@ -190,3 +190,70 @@ git push
     └── README.md
 ```
 ## 🖼️ App Screenshots
+<img width="1791" height="890" alt="image" src="https://github.com/user-attachments/assets/b407b972-96a0-4ec4-afae-79216aef09b9" />
+<img width="1832" height="910" alt="image" src="https://github.com/user-attachments/assets/c474ef2d-4317-4971-a8cb-b3a38989a785" />
+<img width="1797" height="644" alt="image" src="https://github.com/user-attachments/assets/81f1076e-1638-47ca-b2e7-7abd99d54707" />
+<img width="1820" height="875" alt="image" src="https://github.com/user-attachments/assets/0c2e4a73-bb19-4904-938a-08ba3f8d68c8" />
+<img width="1802" height="785" alt="image" src="https://github.com/user-attachments/assets/55573b17-6818-4705-b8fe-cc012d361a1c" />
+
+# Submission Checklist
+## 🎯 Selected topics and total points
+- Budget Management System (Full CRUD): 6 points
+- Orphaned Transactions – Category Deletion: 3 points
+- User Deletion – Data Leak Prevention: 3 points
+- Category Update – Transaction Sync: 3 points
+- Budget Integrity – Category Deletion Impact: 2 points
+- Transaction Category Validation: 3 points
+
+Total: 20 points
+
+## 🛡️ Data Integrity Strategies Chosen
+
+### 1. Budget Management System (6 points)
+- Full CRUD operations for budgets (create, read, update, delete)
+- Compound unique index: `(user_id, category_id, budget_type, month, year)`
+- Progress calculation using MongoDB aggregation (`$match` + `$group`)
+- UI with color-coded progress bars
+- Implementation: `budget_model.py`, `budgets_view.py`, `transaction_model.py` (frontend + backend)
+
+### 2. Orphaned Transactions - Category Deletion (3 points)
+- Count affected transactions and budgets before deletion
+- User choice: Reassign to another category OR Cascade delete
+- MongoDB operations: `update_many()` for reassign, `delete_many()` for cascade
+- Warning dialogs with exact counts
+- Implementation: `category_model.py`, `categories_view.py` (frontend + backend)
+
+### 3. User Deletion - Data Leak Prevention (3 points)
+- MongoDB transaction ensures atomic deletion of all user data
+- Deletes: transactions, budgets, custom categories, user document
+- Confirmation dialog with data summary
+- Rollback protection (all-or-nothing)
+- Implementation: `user_model.py`, `settings_view.py` (frontend + backend)
+
+### 4. Category Update - Transaction Sync Problem (3 points)
+- ObjectId-based relationships (transactions reference category by ID, not name)
+- Automatic sync when category renamed (no manual updates needed)
+- Duplicate name validation within same type
+- Edit form with transaction count display
+- Implementation: `category_model.py`, `transactions_view.py` (frontend + backend)
+
+### 5. Budget Integrity - Category Deletion Impact (2 points)
+- Category deletion also handles related budgets
+- Budgets either reassigned or deleted based on user strategy
+- Budget count shown in deletion warning
+- Integrated with category deletion flow
+- Implementation: `category_model.py`, `budget_model.py` (frontend + backend)
+
+### 6. Transaction Category Validation (3 points)
+- Validate category exists before creating/updating transaction
+- Frontend: Dropdown restricted to valid categories
+- Backend: Database checks with clear error messages
+- User-scoped validation (category must belong to user)
+- Implementation: `transaction_model.py`, `transactions_view.py` (frontend + backend)
+
+### 7. Bonus - Multi-Currency Support with Exchange Rate Management
+- 6 supported currencies: USD, VND, JPY, EUR, CNY, AUD
+- Automatic currency conversion for all transactions and budgets
+- Real-time exchange rates from ExchangeRate-API
+- Smart caching: Rates cached for 24 hours to minimize API calls
+- User preference: Each user can set default display currency
