@@ -210,10 +210,9 @@ streamlit run src/app.py
     └── README.md
 ```
 ## 🖼️ App Screenshots
-### Login screen
+<h3>Login screen</h3>
 <img width="1791" height="890" alt="image" src="https://github.com/user-attachments/assets/b407b972-96a0-4ec4-afae-79216aef09b9" />
-<!-- break -->
-### Dashboard
+<h3>Dashboard</h3>
 <img width="1832" height="910" alt="image" src="https://github.com/user-attachments/assets/c474ef2d-4317-4971-a8cb-b3a38989a785" />
 <!-- break -->
 ### Categories management
@@ -221,7 +220,6 @@ streamlit run src/app.py
 <!-- break -->
 ### Transactions
 <img width="1820" height="875" alt="image" src="https://github.com/user-attachments/assets/0c2e4a73-bb19-4904-938a-08ba3f8d68c8" />
-<!-- break -->
 ### Budgets
 <img width="1802" height="785" alt="image" src="https://github.com/user-attachments/assets/55573b17-6818-4705-b8fe-cc012d361a1c" />
 <!-- break -->
